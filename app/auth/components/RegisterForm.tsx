@@ -3,27 +3,16 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
-import { Check, Eye, EyeOff, Loader2, X } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { registerSchema, type RegisterInput } from "../schemas/auth-schemas";
-import { registerUser, ApiError } from "../api/auth-api";
-import { useToast } from "@/src/hooks/use-toast";
-
-const passwordChecks = [
-  { label: "At least 8 characters", regex: /.{8,}/ },
-  { label: "One uppercase letter", regex: /[A-Z]/ },
-  { label: "One lowercase letter", regex: /[a-z]/ },
-  { label: "One number", regex: /\d/ },
-  { label: "One special character", regex: /[^A-Za-z0-9]/ },
-];
+import { useRegisterMutation } from "../hooks/useRegisterMutation";
+import { PasswordStrengthChecks } from "./PasswordStrengthChecks";
+import Link from "next/link";
 
 export function RegisterForm() {
-  const router = useRouter();
-  const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -37,50 +26,9 @@ export function RegisterForm() {
   });
 
   const passwordValue = watch("password") || "";
-  const allChecksPassed = passwordChecks.every((check) =>
-    check.regex.test(passwordValue),
-  );
+  const registerMutation = useRegisterMutation({ setError });
 
-  const registerMutation = useMutation({
-    mutationFn: (data: RegisterInput) =>
-      registerUser(data.name, data.email, data.password),
-    onSuccess: () => {
-      toast({
-        title: "Account created",
-        description: "Please sign in with your credentials.",
-      });
-      router.push("/auth/login");
-    },
-    onError: (error) => {
-      if (error instanceof ApiError) {
-        if (error.code === "EMAIL_CONFLICT") {
-          setError("email", {
-            message: "An account with this email already exists.",
-          });
-        } else if (error.details && error.details.length > 0) {
-          error.details.forEach((detail) => {
-            setError(detail.field as "name" | "email" | "password", {
-              message: detail.message,
-            });
-          });
-        } else {
-          toast({
-            title: "Registration failed",
-            description: error.message,
-            variant: "destructive",
-          });
-        }
-      } else {
-        toast({
-          title: "Registration failed",
-          description: "An unexpected error occurred",
-          variant: "destructive",
-        });
-      }
-    },
-  });
-
-  async function onSubmit(data: RegisterInput) {
+  function onSubmit(data: RegisterInput) {
     registerMutation.mutate(data);
   }
 
@@ -152,32 +100,13 @@ export function RegisterForm() {
             </p>
           )}
 
-          <ul className="mt-2 space-y-1">
-            {passwordChecks.map((check) => {
-              const isValid = check.regex.test(passwordValue);
-              return (
-                <li
-                  key={check.label}
-                  className={`flex items-center gap-2 text-xs ${
-                    isValid ? "text-green-600" : "text-muted-foreground"
-                  }`}
-                >
-                  {isValid ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : (
-                    <X className="h-3.5 w-3.5" />
-                  )}
-                  {check.label}
-                </li>
-              );
-            })}
-          </ul>
+          <PasswordStrengthChecks password={passwordValue} />
         </div>
 
         <Button
           type="submit"
           className="w-full"
-          disabled={registerMutation.isPending || !allChecksPassed}
+          disabled={registerMutation.isPending}
         >
           {registerMutation.isPending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -189,12 +118,12 @@ export function RegisterForm() {
 
       <p className="text-sm text-muted-foreground text-center mt-6">
         Already have an account?{" "}
-        <a
+        <Link
           href="/auth/login"
           className="text-accent font-medium hover:underline"
         >
           Sign in
-        </a>
+        </Link>
       </p>
     </>
   );

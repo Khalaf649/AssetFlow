@@ -3,20 +3,15 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
-import { useMutation } from "@tanstack/react-query";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { Button } from "@/src/components/ui/button";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
 import { loginSchema, type LoginInput } from "../schemas/auth-schemas";
-import { loginUser, ApiError } from "../api/auth-api";
-import { useAuth } from "../hooks/useAuth";
 import Link from "next/link";
+import { useLoginMutation } from "../hooks/useLoginMutation";
 
 export function LoginForm() {
-  const router = useRouter();
-  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const {
     register,
@@ -26,37 +21,7 @@ export function LoginForm() {
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
-
-  const loginMutation = useMutation({
-    mutationFn: (data: LoginInput) => loginUser(data.email, data.password),
-    onSuccess: (response) => {
-      login(response.accessToken, response.user);
-      router.push("/dashboard");
-    },
-    onError: (error) => {
-      if (error instanceof ApiError) {
-        if (error.code === "UNAUTHORIZED") {
-          setError("root", {
-            message: "Invalid email or password",
-          });
-        } else if (error.details && error.details.length > 0) {
-          error.details.forEach((detail) => {
-            setError(detail.field as "email" | "password", {
-              message: detail.message,
-            });
-          });
-        } else {
-          setError("root.serverError", {
-            message: error.message,
-          });
-        }
-      } else {
-        setError("root.serverError", {
-          message: "An unexpected error occurred",
-        });
-      }
-    },
-  });
+  const loginMutation = useLoginMutation({ setError });
 
   async function onSubmit(data: LoginInput) {
     loginMutation.mutate(data);
@@ -137,7 +102,7 @@ export function LoginForm() {
       </form>
 
       <p className="text-sm text-muted-foreground text-center mt-6">
-        Don't have an account?{" "}
+        Don&apos;t have an account?{" "}
         <Link
           href="/auth/register"
           className="text-accent font-medium hover:underline"
