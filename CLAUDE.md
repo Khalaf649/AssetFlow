@@ -1,345 +1,623 @@
-# Feature Specification: Authentication (auth)
+# AssetTrack — Frontend Feature Specifications (CLAUDE.MD)
 
-## Overview
+## Global Architecture Principles
 
-Implementation of the Authentication domain (Login and Registration) using a feature-based architecture (Vertical Slices). This module handles user identity, secure token storage, and initial application entry points using a strict "Zero-Local-State" error handling pattern.
+- **Framework:** Next.js App Router
+- **Styling:** Tailwind CSS
+- **Forms:** React Hook Form + Zod (zodResolver)
+- **Server State:** TanStack Query v5 (`useQuery`, `useMutation`)
+- **UI State:** URL Search Params (`useSearchParams`) — no `useState` for filters/pagination
+- **Global Client State:** React Context API (`AuthContext`)
+- **Icons:** Lucide React
+- **Base URL:** `http://localhost:8080/api/v1`
+- **Auth:** Bearer JWT in `Authorization` header
 
-## Feature Tech Stack
+### Standard API Response Envelope
+
+Every API call must be wrapped/unwrapped through the envelope pattern:
+
+- **Success:** `{ success: true, status, message, data }`
+- **Error:** `{ success: false, status, message, error: { code, details[] } }`
+- **Paginated:** `data.items[]` + `data.pagination { page (0-indexed), size, totalElements, totalPages }`
+
+### Zero-Local-State Error Mapping Pattern
+
+Never use `useState` for server errors. All mutation errors must flow through React Hook Form's `setError`:
+
+- **Field errors (409/422):** `setError('fieldName', { message: '...' })`
+- **Auth errors (401):** `setError('root', { message: '...' })` — never map to a specific field
+- **Server errors (500):** `setError('root.serverError', { message: '...' })`
+
+---
+
+## Feature Specification: Authentication (auth)
+
+### Overview
+
+Handles user identity, secure token storage, and initial application entry points. Uses a strict "Zero-Local-State" error handling pattern.
+
+### Feature Tech Stack
 
 - **Routing:** Next.js App Router (`/auth/login`, `/auth/register`)
-- **Styling:** Tailwind CSS
-- **Forms:** React Hook Form
-- **Validation:** Zod (Schema-based client validation)
+- **Forms:** React Hook Form + Zod (`zodResolver`)
 - **Server State:** TanStack Query (`useMutation`)
 - **Global Client State:** React Context API (`AuthContext`)
 
-## Logic Workflow & Architecture
+### Specific Business Rules (Zod Schemas — `auth-schemas.ts`)
 
-1. The Passive Layout (layout.tsx)
-   The auth layout is strictly presentational. It provides the visual container (e.g., a centered card with a background or company logo) for both Login and Register pages. It contains absolutely no business logic or route protection; its only job is to render {children}.
-2. Client-Side Form Management
-   Forms are managed using React Hook Form for uncontrolled component performance, paired with Zod for strict validation.
+- **Name:** String, length 1–120 characters
+- **Email:** Valid email format, `.transform(v => v.toLowerCase())` before submission
+- **Password:** Min 8 chars, regex requiring ≥1 uppercase, ≥1 lowercase, ≥1 number, ≥1 special character
 
-The zodResolver connects the schemas (auth-schemas.ts) to the form.
+### Directory Structure
 
-The API is completely protected from being called if the client-side validation (e.g., valid email string format, minimum password length) fails.
-
-3. Server State & "Zero-State" Error Mapping (Crucial Pattern)
-   Authentication is a write operation, utilizing TanStack Query's useMutation. We strictly avoid using standard React useState to track server errors.
-
-The Error Flow:
-
-API Call: mutationFn posts to /auth/login or /auth/register. If the server's standard response envelope returns success: false, the API layer throws the machine-readable error object.
-
-The Catch: The onError callback in useMutation catches this error.
-
-The Mapping: We use React Hook Form's setError function to map the server error directly back into the Zod/Form state:
-
-Field Errors (422): Mapped directly to specific inputs (e.g., setError('email', { message: 'Domain blocked' })).
-
-Logic Errors (401/409): Mapped to relevant fields (e.g., setError('password', { message: 'Invalid credentials' })).
-
-Global Errors (500): Mapped to the root (e.g., setError('root.serverError', { message: '...' })).
-
-4. Identity Update & Persistent Session
-   Upon a successful 200 OK response:
-
-The accessToken and user object are extracted from the data field of the response envelope.
-
-The login(token, user) function from AuthContext is called.
-
-This sets the global identity state and stores the JWT (and optionally the basic user profile) in localStorage for persistence across browser refreshes.
-
-5. Final Navigation
-   Immediately following the successful AuthContext update, the onSuccess callback of the mutation triggers the Next.js router:
-
-router.push('/dashboard')
-
-The user seamlessly transitions into the protected application hub
-
-## Directory Structure
-
-```text
-src/
-└── app/
-    └── auth/                  # Unified Auth Domain
-        ├── layout.tsx         # Passive Shared UI (Branding/Background ONLY)
-        ├── login/
-        │   └── page.tsx       # Login Page Entry
-        ├── register/
-        │   └── page.tsx       # Registration Page Entry
-        ├── api/               # auth-api.ts: Envelope-unwrapping fetchers
-        ├── components/        # LoginForm.tsx, RegisterForm.tsx
-        ├── context/           # AuthContext.tsx (Global Identity)
-        ├── hooks/             # useAuth.ts (Context consumer)
-        └── schemas/           # auth-schemas.ts (Zod Validation)
+```
+src/app/auth/
+├── layout.tsx          # Passive: visual container only, no logic
+├── login/
+│   └── page.tsx
+├── register/
+│   └── page.tsx
+├── api/
+│   └── auth-api.ts     # Envelope-unwrapping fetchers
+├── components/
+│   ├── LoginForm.tsx
+│   └── RegisterForm.tsx
+├── context/
+│   └── AuthContext.tsx  # Global identity & roles
+├── hooks/
+│   └── useAuth.ts       # Context consumer
+└── schemas/
+    └── auth-schemas.ts  # Zod schemas with regex
 ```
 
-# Feature Specification: Dashboard (dashboard)
+### Logic Workflow
 
-## Overview
+#### 1. Passive Layout (`layout.tsx`)
 
-Implementation of the Dashboard domain using a feature-based architecture. The dashboard acts as the secure, primary navigation hub for the application. It dynamically adapts its UI based on the user's role (RBAC), ensuring users only see modules they have permission to access.
+Strictly presentational. Renders a centered card/background/logo. Contains **no** business logic or route protection. Only job: render `{children}`.
 
-## Feature Tech Stack
+#### 2. Client-Side Form Management
+
+- React Hook Form via `zodResolver` connects `auth-schemas.ts` to the form
+- The API is fully blocked if client-side validation fails (email format, password complexity)
+
+#### 3. Registration Flow — `POST /auth/register`
+
+- **Request:** `{ name, email (lowercase), password }`
+- **Success (201 Created):** Returns user data only — **no token is issued**
+  - On success, redirect the user to `/auth/login` with a success toast/message
+  - Do **not** attempt to call `AuthContext.login()` — there is no `accessToken` in the register response
+- **Error (409 EMAIL_CONFLICT):** Map via `setError('email', { message: 'An account with this email already exists.' })`
+- **Error (422):** Map field errors from `error.details` array to their respective form fields
+
+#### 4. Login Flow — `POST /auth/login`
+
+- **Request:** `{ email, password }`
+- **Success (200 OK):** Response `data` contains `{ accessToken, tokenType, expiresIn, user: { id, name, role } }`
+  - Extract `accessToken` and `user` (`id`, `name`, `role`) — **note:** the login response does NOT include `email` in the user object
+  - Call `login(token, user)` from `AuthContext`
+  - Store JWT and user profile (including `role` for RBAC) in `localStorage`
+  - Navigate to `router.push('/dashboard')`
+- **Error (401 UNAUTHORIZED):** Map strictly to `setError('root', { message: 'Invalid email or password' })` — never map to a specific field (prevents user enumeration)
+- **Error (500):** Map to `setError('root.serverError', { message: '...' })`
+
+---
+
+## Feature Specification: Dashboard (dashboard)
+
+### Overview
+
+The secure primary navigation hub. Dynamically adapts its UI based on the user's role (RBAC).
+
+### Feature Tech Stack
 
 - **Routing:** Next.js App Router (`/dashboard`)
-- **Styling:** Tailwind CSS
 - **Global Client State:** React Context API (`AuthContext`)
-- **Icons/Visuals:** Lucide React
+- **Server State:** TanStack Query (`useQuery`)
+- **Icons:** Lucide React
 
-## Directory Structure
+### Directory Structure
 
-```text
-src/
-└── app/
-    └── dashboard/             # Unified Dashboard Domain
-        ├── layout.tsx         # The Guardian: Auth Protection & Main Navbar
-        ├── page.tsx           # Traffic Controller: Role-based rendering
-        └── components/
-            ├── AdminManagerView.tsx # Dashboard for ADMIN and MANAGER
-            ├── DeveloperView.tsx    # Dashboard for DEVELOPER
-            └── DashboardCard.tsx    # Reusable navigation card UI
+```
+src/app/dashboard/
+├── layout.tsx                  # The Guardian: auth protection & Navbar
+├── page.tsx                    # Traffic Controller: role-based rendering
+└── components/
+    ├── AdminManagerView.tsx    # Dashboard metrics & navigation
+    ├── DeveloperView.tsx       # Focused personal hardware view
+    ├── DashboardCard.tsx       # Reusable navigation/metric card
+    └── NotificationBell.tsx    # Navbar widget for unread alerts
 ```
 
-Logic Workflow & Architecture
+### Logic Workflow
 
-1. The Guardian (layout.tsx)
+#### 1. The Guardian (`layout.tsx`)
 
-The Dashboard layout is active and protected. It acts as "The Guardian" for the entire post-login application.
+Active and protected. Consumes `AuthContext` — if no valid session/token, redirect to `/auth/login`. Renders the global Navbar containing:
 
-Authentication Check: Consumes AuthContext to verify the presence of a valid session/token. If missing, the user is intercepted and redirected to /auth/login.
+- Company branding & dynamic greeting
+- `<NotificationBell />` — fetches `GET /notifications`
+- User profile dropdown & logout (clears `AuthContext` + `localStorage`, redirect to `/auth/login`)
 
-Shared UI: Renders the global Navigation Bar (containing the branding, dynamic greeting, user profile dropdown, and logout button) which wraps the dashboard {children}.
+#### 2. The Traffic Controller (`page.tsx`)
 
-2. The Traffic Controller (page.tsx)
+Minimal UI logic. Reads `user.role` from `AuthContext` and delegates:
 
-The page.tsx file contains minimal UI logic. Its primary responsibility is extracting the user's role and delegating the rendering to the appropriate sub-component. It does not pass props.
+- `user.role === 'DEVELOPER'` → `<DeveloperView />`
+- `user.role === 'ADMIN' || user.role === 'MANAGER'` → `<AdminManagerView />`
 
-State Reading: Reads user.role from the AuthContext.
+Both sub-components consume `AuthContext` directly (no prop drilling).
 
-Conditional Rendering:
+#### 3. Admin & Manager View (`AdminManagerView.tsx`)
 
-if (user.role === 'DEVELOPER') return <DeveloperView />
+Live KPI cards via `GET /reports/dashboard`:
 
-if (user.role === 'ADMIN' || user.role === 'MANAGER') return <AdminManagerView />
+- Total Assets (by type breakdown)
+- Open Condition Reports count
+- Upcoming Warranty Expirations (within 30 days)
 
-3. Role-Based Access Control (RBAC) Views
+Navigation modules:
 
-Both of these components internally consume the AuthContext to access any necessary user data (like displaying their specific name in the greeting), completely avoiding prop drilling.
+- **Personnel Directory** → `/users` (role assignment hidden unless `ADMIN`)
+- **Asset Inventory** → `/assets`
+- **Condition Reports** → `/condition-reports`
+- **Analytics & Reports** → `/reports`
 
-Admin & Manager View (<AdminManagerView />)
+#### 4. Developer View (`DeveloperView.tsx`)
 
-Provides a high-level, organizational overview.
+Personal hardware overview. Navigation modules:
 
-Accessible Modules (Cards):
+- **My Equipment** → `/assets?assignedUserId={currentUser.id}`
+- **Spare Laptops** → `/assets/spare-laptops` (calls `GET /assets/spare-laptops`)
+- **Report Issue** → Quick-action to `/condition-reports/new`
+- **My Profile** → `/users/{currentUser.id}`
 
-Personnel Directory: Manage employee roles and audit users (Links to /users).
+---
 
-Asset Inventory: Full access to all hardware assets across the company (Links to /assets).
+## Feature Specification: User Management (users)
 
-Spare Laptops: Search for available unassigned hardware (Links to /assets/spare-laptops).
+### Overview
 
-Condition Reports: Review and resolve hardware issue reports (Links to /condition-reports).
+Personnel directory and individual profiles. Enforces RBAC via layout guards and UI element rendering. Uses "Zero-Local-State" pattern — URL as filter state, TanStack Query for server data.
 
-Analytics & Reports: High-level metrics on asset status, usage statistics, and warranty tracking (Links to /reports/dashboard).
-
-My Profile: View personal info and allocation history (Links to /users/me).
-
-Developer View (<DeveloperView />)
-
-Provides a focused, personal overview limited to the individual's assigned hardware. Includes contextual shortcuts like the "Current Device" glance and support CTAs.
-
-Accessible Modules (Cards):
-
-My Equipment: View currently assigned laptops and monitors (Links to /assets with a pre-applied ?userId=me filter).
-
-Spare Laptops: Search for available backup hardware (Links to /assets/spare-laptops).
-
-Report Issue: Quick-action shortcut to submit a condition report for broken gear (Links to /assets/report).
-
-My Profile: View personal info and allocation history (Links to /users/me).
-
-Component State Management
-
-Zero API Calls: The dashboard /dashboard route typically does not make its own heavy API calls via TanStack Query. It is a pure navigation hub.
-
-Identity State Only: It relies entirely on the synchronous AuthContext to determine what to render, keeping the load time nearly instant.
-
-# Feature Specification: User Management (users)
-
-## Overview
-
-Implementation of the User Management domain using a vertical slice architecture. This module handles the personnel directory and individual profiles. It strictly enforces Role-Based Access Control (RBAC) via layout guards and utilizes a "Zero-Local-State" pattern, relying entirely on the URL for filter state and TanStack Query for server data.
-
-## Feature Tech Stack
+### Feature Tech Stack
 
 - **Routing:** Next.js App Router (`/users`, `/users/[id]`)
 - **Server State:** TanStack Query v5 (`useQuery`, `useMutation`)
 - **UI/Filter State:** URL Search Params (`useSearchParams`)
-- **Validation & Parsing:** Zod (for URL coercion and mutation payloads)
+- **Validation:** Zod
 - **Global Client State:** React Context API (`AuthContext`)
 
-## Directory Structure
+### Directory Structure
 
-```text
-src/
-└── app/
-    └── users/                 # Unified User Domain
-        ├── layout.tsx         # The Guardian: Route protection & ID checking
-        ├── page.tsx           # User Directory (Collection View)
-        ├── [id]/
-        │   └── page.tsx       # Specific User Profile (Resource View)
-        ├── api/               # users-api.ts: Envelope-unwrapping fetchers
-        ├── components/
-        │   ├── UserTable.tsx  # Renders the data
-        │   └── FilterBar.tsx  # Updates the URL
-        ├── hooks/
-        │   ├── useUsers.ts        # GET all users (consumes URL filters)
-        │   ├── useUser.ts         # GET specific user
-        │   ├── useUserFilters.ts  # URL-as-State custom hook
-        │   └── useUpdateUser.ts   # PATCH user role/details
-        └── schemas/
-            ├── filter-schema.ts   # Zod schema for URL coercion
-            └── users-schemas.ts   # Zod schema for profile updates
+```
+src/app/users/
+├── layout.tsx                  # The Guardian: RBAC & ID checking
+├── page.tsx                    # User Directory (Collection View)
+├── [id]/
+│   └── page.tsx               # Specific User Profile (Resource View)
+├── api/
+│   └── users-api.ts
+├── components/
+│   ├── UserTable.tsx          # Renders data; disables actions for non-Admins
+│   ├── FilterBar.tsx          # Updates URL (role filter)
+│   ├── UpdateRoleModal.tsx    # Role modifications only
+│   └── DeleteUserModal.tsx    # Deletion confirmation
+├── hooks/
+│   ├── useUsers.ts            # GET /users (consumes URL filters)
+│   ├── useUser.ts             # GET /users/{id}
+│   ├── useUserFilters.ts      # URL-as-State custom hook
+│   ├── useUpdateRole.ts       # PATCH /users/{id}/role (ADMIN only)
+│   └── useDeleteUser.ts       # DELETE /users/{id} (ADMIN only)
+└── schemas/
+    ├── filter-schema.ts       # Zod URL coercion (0-indexed page mapping)
+    └── users-schemas.ts       # Zod for role enum: ADMIN | MANAGER | DEVELOPER
 ```
 
-1. The Guardian (Layout Protection Logic)
-   The layout.tsx file intercepts all traffic to /users/\* and checks the global AuthContext and the current URL pathname to enforce strict RBAC:
+### Logic Workflow
 
-Admins & Managers: Unrestricted access to /users and /users/[id].
+#### 1. The Guardian (Layout & UI Protection)
 
-Developers:
+- **ADMIN & MANAGER:** Unrestricted view access to `/users` and `/users/[id]`
+- **DEVELOPER:**
+  - `/users` → redirect to `/dashboard`
+  - `/users/[id]` where `id === currentUser.id` → access granted (own profile)
+  - `/users/[id]` where `id !== currentUser.id` → redirect to `/dashboard`
+- **UI Guard:** `UserTable.tsx` reads `AuthContext` and **completely hides** "Edit Role" and "Delete" buttons unless the active user is `ADMIN`
 
-Blocked: Attempting to load /users redirects to /dashboard.
+#### 2. URL-as-State (`filter-schema.ts`, `useUserFilters.ts`)
 
-Conditional Access: Attempting to load /users/[id] extracts the [id] from the URL. If [id] === currentUser.id, access is granted.
+- Zod coerces URL strings to typed values
+- **Page mapping:** UI URL `?page=1` → API payload `page: 0` (0-indexed)
+- `setFilter` calls `router.replace()` to update URL — triggers automatic TanStack Query refetch
+- Query params: `page` (int ≥0), `size` (int 1–100), `role` (ADMIN|MANAGER|DEVELOPER)
 
-Blocked: Attempting to load another user's [id] redirects to /dashboard.
+#### 3. Server State (TanStack Query)
 
-2. UI State Architecture (URL-as-State)
-   We completely avoid useState for managing table filters or pagination. Instead, we treat the URL query string as the single source of truth.
+- `useUsers` — accepts typed output of `useUserFilters`; filter object is the query key
+- `useDeleteUser`:
+  - **409 USER_HAS_ACTIVE_ALLOCATIONS** → show specific modal error: "Return user's assigned assets first"
+  - **422** (self-deletion) → block the action with an error message
+  - On success: `queryClient.invalidateQueries({ queryKey: ['users'] })`
 
-Schema Validation (filter-schema.ts): Zod is used to safely parse and coerce URL strings into JavaScript types (e.g., ensuring ?page=text falls back to page: 1).
+#### 4. Role Update (`UpdateRoleModal.tsx`, `useUpdateRole.ts`)
 
-The Hook (useUserFilters.ts): Reads useSearchParams(), parses it through the Zod schema, and provides a setFilter function that updates the URL via router.replace().
+- Schema: role must be one of `ADMIN | MANAGER | DEVELOPER`
+- `PATCH /users/{id}/role` → `{ role: "MANAGER" }`
+- **409 LAST_ADMIN_PROTECTION** → map to `setError('root', { message: 'Cannot remove the last admin.' })`
+- On success: `queryClient.invalidateQueries` for both `['users']` and `['user', id]`, then close modal
 
-3. Server State Architecture (TanStack Query)
-   All external data is handled by TanStack Query, strictly adhering to an API Envelope pattern ({ success, data, message, errors }).
+---
 
-Read All (useUsers)
-Action: Fetches the paginated list of all personnel.
+## Feature Specification: Asset Management (assets)
 
-Integration: The hook accepts the strongly-typed output from useUserFilters. Because the filter object acts as the query key, React Query automatically triggers a background re-fetch whenever the URL changes.
+### Overview
 
-Delete User (useDeleteUser)
-Action: Safely removes a user from the system via the DeleteUserCard.tsx modal.
+Manages the lifecycle of hardware (Laptops, Monitors, Accessories) and their allocation to personnel. Uses a "Traffic Controller" page for role-based views and "The Guardian" layout for access control.
 
-Handling Result:
+### Feature Tech Stack
 
-If the envelope returns success: false, a toast notification or in-modal error is displayed.
-
-If success: true, the modal closes and queryClient.invalidateQueries({ queryKey: ['users'] }) is called to instantly remove the user from the table.
-
-4. Form & Mutation Architecture (Zero-State Error Mapping)
-   For updating users (UpdateUserModal.tsx), we use a strict 3-part architecture to eliminate useState for form handling and error management.
-
-The Schema (users-schemas.ts): Defines the strict Zod shape for a valid update (e.g., name string limits, role enums).
-
-The Mutation Hook (useUpdateUser.ts): Fires the PATCH request. If the server envelope returns success: false, it strictly throws the error payload so the component can catch it.
-
-The Form Component (UpdateUserModal.tsx):
-
-Client Validation: Uses React Hook Form with zodResolver. Submission is blocked until client validation passes.
-
-Server Error Mapping: If the mutation's onError callback triggers, it receives the server error envelope. It uses React Hook Form's setError('fieldName', { message }) to map backend errors (e.g., "Email already in use") directly to the specific UI inputs.
-
-Cache Sync: On success: true, it calls queryClient.invalidateQueries for both ['users'] and ['user', id] to instantly refresh the UI, then closes the modal.
-
-# Feature Specification: Asset Management (assets)
-
-## Overview
-
-Implementation of the Asset Inventory domain using a vertical slice architecture. This module manages the lifecycle of hardware (Laptops, Monitors). It uses a "Traffic Controller" page for role-based views and "The Guardian" layout to restrict sensitive operations and data access to appropriate roles.
-
-# Feature Specification: Asset Management (assets)
-
-## Overview
-
-Implementation of the Asset Inventory domain using a vertical slice architecture. This module manages the lifecycle of hardware (Laptops, Monitors). It utilizes a "Traffic Controller" page for role-based views and "The Guardian" layout to restrict sensitive operations and data access to appropriate roles.
-
-## Feature Tech Stack
-
-- **Routing:** Next.js App Router (`/assets`, `/assets/[id]`)
+- **Routing:** Next.js App Router (`/assets`, `/assets/[id]`, `/assets/search`)
 - **Server State:** TanStack Query v5 (`useQuery`, `useMutation`)
 - **UI/Filter State:** URL Search Params (`useSearchParams`)
-- **Forms & Validation:** React Hook Form + Zod (Resolver)
+- **Forms & Validation:** React Hook Form + Zod
 - **Global Client State:** React Context API (`AuthContext`)
 
-## Directory Structure
+### Directory Structure
 
-```text
-src/
-└── app/
-    └── assets/                # Unified Asset Domain
-        ├── layout.tsx         # The Guardian: RBAC & Assignment check
-        ├── page.tsx           # Traffic Controller: Role-based Directory
-        ├── [id]/
-        │   └── page.tsx       # Asset Detail View
-        ├── api/               # assets-api.ts: Envelope-unwrapping fetchers
-        ├── components/
-        │   ├── AdminAssetView.tsx    # Full inventory for Admin/Manager
-        │   ├── DeveloperAssetView.tsx # Filtered view for Developers
-        │   ├── AssetFilterBar.tsx    # URL-based filtering (model, serial, status)
-        │   ├── AssetFormModal.tsx    # Unified RHF + Zod form for Create/Update
-        │   └── DeleteAssetCard.tsx   # Protected Admin-only deletion window
-        ├── hooks/
-        │   ├── useAssets.ts          # GET all assets (consumes URL filters)
-        │   ├── useAsset.ts           # GET specific asset
-        │   ├── useAssetFilters.ts    # URL-as-State hook
-        │   ├── useAssetMutations.ts  # POST/PATCH asset logic
-        │   └── useDeleteAsset.ts     # DELETE asset (Admin only)
-        └── schemas/
-            ├── asset-filter-schema.ts # Zod URL coercion
-            └── asset-schemas.ts       # Zod validation for hardware specs
-
-1. The Guardian (Layout Protection Logic)
-The layout.tsx file intercepts all traffic to /assets/* and enforces strict access rules based on the AuthContext:
-
-Admins & Managers: Granted unrestricted access to the global inventory and all specific asset detail pages.
-
-Developers:
-
-Directory Access: Allowed access to the /assets root (Traffic Controller determines the view).
-
-Detail Access (/assets/[id]): The layout extracts the id and verifies the assignment. If the asset.assignedTo does not match the currentUser.id, the user is redirected to /dashboard.
-
-2. The Traffic Controller (Role-Based Directory)
-The page.tsx file serves as a logic-less entry point that delegates rendering based on the user's role:
-
-<AdminAssetView />: Renders the full inventory with "Delete," "Assign," and "Create" capabilities.
-
-<DeveloperAssetView />: Automatically applies a userId=me filter to the useAssets query, showing only hardware assigned to the individual.
-
-3. UI State Architecture (URL-as-State)
-All filtering and searching are driven by the URL query string to ensure shareability and persistence:
-
-Coercion (asset-filter-schema.ts): Zod safely parses URL strings (e.g., ?status=AVAILABLE) and falls back to safe defaults if parameters are malformed.
-
-Persistence: Filters remain active after page refreshes or when navigating back from an asset detail page.
-
-4. Mutation Architecture (Create & Update)
-We use a "Stress-Test" pattern for hardware registration and modification to ensure data integrity.
-
-Unified Form Logic (AssetFormModal.tsx)
-Client Validation: Powered by react-hook-form and the zodResolver. Submission is blocked until all constraints (model length, serial number format) are met.
-
-Zero-State Error Mapping: If the server returns success: false (e.g., "Serial number already exists"), the onError callback in useAssetMutations maps the backend error directly to the corresponding form field using setError.
-
-Server State: useMutation handles the lifecycle. On success, it invalidates the ['assets'] and ['asset', id] query keys to trigger a silent UI refresh.
-
-Protected Deletion (DeleteAssetCard.tsx)
-Role Constraint: The deletion logic and UI components are strictly rendered only within the AdminAssetView.
-
-Safety Layer: A confirmation window is required before the useDeleteAsset mutation is fired.
 ```
+src/app/assets/
+├── layout.tsx                    # The Guardian: RBAC & assignment check
+├── page.tsx                      # Traffic Controller: role-based directory
+├── [id]/
+│   └── page.tsx                 # Asset Detail View (history & reports)
+├── api/
+│   └── assets-api.ts
+├── components/
+│   ├── AdminAssetView.tsx        # Full inventory for Admin/Manager
+│   ├── DeveloperAssetView.tsx    # Filtered view for Developer
+│   ├── AssetFilterBar.tsx        # URL-based filtering
+│   ├── AssetFormModal.tsx        # Unified RHF+Zod form: Create/Update
+│   ├── AllocationModal.tsx       # Assign/Return assets
+│   ├── AllocationHistoryTable.tsx # Renders GET /assets/{id}/allocations
+│   └── DeleteAssetCard.tsx       # Admin-only decommissioning
+├── hooks/
+│   ├── useAssets.ts              # GET /assets (URL filters)
+│   ├── useAssetSearch.ts         # GET /assets/search
+│   ├── useSpareLaptops.ts        # GET /assets/spare-laptops
+│   ├── useAsset.ts               # GET /assets/{id}
+│   ├── useAssetAllocations.ts    # GET /assets/{id}/allocations
+│   ├── useAssetFilters.ts        # URL-as-State (0-indexed mapping)
+│   ├── useAssetMutations.ts      # POST/PUT asset metadata
+│   ├── useAllocations.ts         # POST/DELETE allocation lifecycle
+│   └── useDeleteAsset.ts         # DELETE /assets/{id} (Admin only)
+└── schemas/
+    ├── asset-filter-schema.ts
+    └── asset-schemas.ts          # Strict date/length rules
+```
+
+### Logic Workflow
+
+#### 1. The Guardian (Layout Protection)
+
+- **ADMIN & MANAGER:** Unrestricted access to all asset pages, search, and details
+- **DEVELOPER:**
+  - `/assets` root → allowed (Traffic Controller renders `DeveloperAssetView`)
+  - `/assets/spare-laptops` → allowed
+  - `/assets/[id]` → layout verifies via API/cache that asset is assigned to `currentUser.id`; if not → redirect to `/dashboard`
+  - Search and admin operations → blocked
+
+#### 2. Traffic Controller (`page.tsx`)
+
+- `<AdminAssetView />` — full inventory table with Create, Update, Allocate, Delete buttons
+- `<DeveloperAssetView />` — filtered to current user's assets + spare laptops; action limited to submitting Condition Reports
+
+#### 3. URL-as-State
+
+- `asset-filter-schema.ts`: coerces `?status=AVAILABLE&type=LAPTOP`, 1-indexed UI page → 0-indexed API page
+- Filter params: `type` (LAPTOP|MONITOR|ACCESSORY), `status` (AVAILABLE|ASSIGNED|UNDER_REPAIR|DECOMMISSIONED), `brand`, `assignedUserId`, `warrantyExpiresBefore`, `page`, `size`
+
+#### 4. Mutation Architecture
+
+**`AssetFormModal.tsx` — Create (`POST /assets`) & Update (`PUT /assets/{id}`)**
+
+Zod validation blocks submission unless:
+
+- `brand` ≤ 80 chars, `model` ≤ 120 chars, `serialNumber` ≤ 100 chars
+- `purchaseDate` ≤ today (ISO date)
+- `warrantyExpirationDate` ≥ `purchaseDate`
+- `type` ∈ `LAPTOP | MONITOR | ACCESSORY`
+
+Error mapping:
+
+- **409 SERIAL_NUMBER_CONFLICT** → `setError('serialNumber', { message: 'Serial number already exists.' })`
+
+On success: `queryClient.invalidateQueries(['assets'])`, close modal.
+
+**`AllocationModal.tsx` — Assign (`POST /assets/{id}/allocations`) & Return (`DELETE /assets/{id}/allocations`)**
+
+- Request body for assign: `{ userId: "u-xxx" }`
+- **409 ASSET_ALREADY_ASSIGNED** → `setError('root', { message: 'Asset is already deployed to another user.' })`
+- **409 NO_ACTIVE_ALLOCATION** → `setError('root', { message: 'No active allocation to return.' })`
+- On success: invalidate `['assets']` and `['asset', id]`
+
+**`AllocationHistoryTable.tsx` — `GET /assets/{id}/allocations`**
+
+- Roles: ADMIN, MANAGER only
+- Displayed inside the Asset Detail page alongside asset metadata
+- Shows `allocationId`, `user (id + name)`, `assignedAt`, `returnedAt` (null = currently assigned)
+
+**`DeleteAssetCard.tsx` — `DELETE /assets/{id}`**
+
+- Rendered only if `user.role === 'ADMIN'`
+- Requires confirmation window before firing `useDeleteAsset`
+- Returns asset to `DECOMMISSIONED` status
+
+#### 5. Asset Search (`/assets/search` — `GET /assets/search`)
+
+- Roles: ADMIN, MANAGER only
+- Free-text query across serial number, brand, model via `q` param
+- Additional filters: `type`, `status`, `assignedUserId`, `brand`, `warrantyExpired` (boolean), `page`, `size`
+- Handled by `useAssetSearch` hook with its own URL query params (separate from column filters)
+
+---
+
+## Feature Specification: Condition Reports (condition-reports)
+
+### Overview
+
+Allows Developers to report hardware issues on their assigned assets, and Admins/Managers to review, update, and resolve those reports.
+
+### Feature Tech Stack
+
+- **Routing:** Next.js App Router (`/condition-reports`, `/condition-reports/[id]`)
+- **Server State:** TanStack Query v5 (`useQuery`, `useMutation`)
+- **UI/Filter State:** URL Search Params
+- **Forms & Validation:** React Hook Form + Zod
+- **Global Client State:** React Context API (`AuthContext`)
+
+### Directory Structure
+
+```
+src/app/condition-reports/
+├── layout.tsx                       # The Guardian: authentication check
+├── page.tsx                         # Traffic Controller: role-based view
+├── [id]/
+│   └── page.tsx                    # Report Detail + Resolution Form
+├── api/
+│   └── condition-reports-api.ts
+├── components/
+│   ├── AdminConditionReportView.tsx  # Full list with filters (Admin/Manager)
+│   ├── ReportIssueForm.tsx           # Submit new report (all roles on own assets)
+│   ├── ResolveReportModal.tsx        # Update status/resolution (Admin/Manager)
+│   └── ConditionReportFilterBar.tsx  # URL-based filter bar
+├── hooks/
+│   ├── useConditionReports.ts        # GET /condition-reports
+│   ├── useConditionReport.ts         # GET /condition-reports/{id} (detail)
+│   ├── useSubmitReport.ts            # POST /assets/{id}/condition-reports
+│   ├── useResolveReport.ts           # PATCH /condition-reports/{id}
+│   └── useReportFilters.ts           # URL-as-State hook
+└── schemas/
+    └── condition-report-schemas.ts   # Zod schemas
+```
+
+### API Endpoints
+
+| Method | Endpoint                         | Roles                           | Description                   |
+| ------ | -------------------------------- | ------------------------------- | ----------------------------- |
+| POST   | `/assets/{id}/condition-reports` | DEVELOPER (own), ADMIN, MANAGER | Submit a new report           |
+| GET    | `/condition-reports`             | ADMIN, MANAGER                  | List all reports with filters |
+| PATCH  | `/condition-reports/{id}`        | ADMIN, MANAGER                  | Update status/resolution      |
+
+### Logic Workflow
+
+#### 1. The Guardian (`layout.tsx`)
+
+All authenticated users can access condition reports (submit on own assets). The page layout checks auth via `AuthContext`; unauthenticated users are redirected to `/auth/login`.
+
+#### 2. Traffic Controller (`page.tsx`)
+
+- **DEVELOPER:** Sees only their own submitted reports; can only use `ReportIssueForm`
+- **ADMIN / MANAGER:** Sees `AdminConditionReportView` — full list with filters and status management
+
+#### 3. Submit Report (`ReportIssueForm.tsx`, `useSubmitReport.ts`)
+
+- Endpoint: `POST /assets/{assetId}/condition-reports`
+- **Zod validation:**
+  - `issue`: min 10 characters (non-blank)
+  - `severity`: must be one of `LOW | MEDIUM | HIGH`
+- **Error (422 VALIDATION_ERROR):** Map `error.details` fields (`issue`, `severity`) to form errors
+- On success (201): invalidate `['condition-reports']` and `['asset', assetId]`
+
+#### 4. Filter & List (`AdminConditionReportView.tsx`, `useConditionReports.ts`)
+
+- Query params: `status` (OPEN|IN_PROGRESS|RESOLVED), `severity` (LOW|MEDIUM|HIGH), `assetId`, `page`, `size`
+- URL is the single source of truth for all filter state
+
+#### 5. Resolve Report (`ResolveReportModal.tsx`, `useResolveReport.ts`)
+
+- Endpoint: `PATCH /condition-reports/{id}`
+- Request: `{ status: "RESOLVED", resolution: "..." }`
+- Status transitions: OPEN → IN_PROGRESS → RESOLVED (validate allowed transitions on the client)
+- **RESOLVED** status requires a non-empty `resolution` field
+- On success: invalidate `['condition-reports']` and `['condition-report', id]`
+
+---
+
+## Feature Specification: Reports & Analytics (reports)
+
+### Overview
+
+Provides Admins and Managers with data-driven organizational insights: asset usage statistics, warranty expiry tracking, and dashboard KPIs.
+
+### Feature Tech Stack
+
+- **Routing:** Next.js App Router (`/reports`)
+- **Server State:** TanStack Query v5 (`useQuery`)
+- **UI/Filter State:** URL Search Params
+- **Global Client State:** React Context API (`AuthContext`)
+- **Charts:** Recharts (or similar)
+
+### Directory Structure
+
+```
+src/app/reports/
+├── layout.tsx                       # The Guardian: ADMIN/MANAGER only
+├── page.tsx                         # Reports Hub: tab/section navigation
+├── api/
+│   └── reports-api.ts
+├── components/
+│   ├── DashboardStatsPanel.tsx       # KPI cards from /reports/dashboard
+│   ├── UsageReportView.tsx           # Allocation history charts
+│   ├── WarrantyExpiryView.tsx        # Warranty expiry list + actions
+│   └── ReportFilterBar.tsx          # Date range + type filters
+└── hooks/
+    ├── useDashboardStats.ts          # GET /reports/dashboard
+    ├── useUsageReport.ts             # GET /reports/usage
+    └── useWarrantyExpiry.ts          # GET /reports/warranty-expiry
+```
+
+### API Endpoints
+
+| Method | Endpoint                   | Roles          | Description                               |
+| ------ | -------------------------- | -------------- | ----------------------------------------- |
+| GET    | `/reports/dashboard`       | ADMIN, MANAGER | Aggregate KPI statistics                  |
+| GET    | `/reports/usage`           | ADMIN, MANAGER | Asset usage + allocation history          |
+| GET    | `/reports/warranty-expiry` | ADMIN, MANAGER | Assets with upcoming/past warranty expiry |
+
+### Logic Workflow
+
+#### 1. The Guardian (`layout.tsx`)
+
+Blocks DEVELOPER role — redirects to `/dashboard`. Only ADMIN and MANAGER can access `/reports/*`.
+
+#### 2. Dashboard Stats (`DashboardStatsPanel.tsx`, `useDashboardStats.ts`)
+
+Fetches `GET /reports/dashboard`. Displays:
+
+- `totalAssets` + `byType` breakdown (LAPTOP, MONITOR, ACCESSORY)
+- `byStatus` breakdown (AVAILABLE, ASSIGNED, UNDER_REPAIR, DECOMMISSIONED)
+- `warrantyExpiringIn30Days`
+- `openConditionReports`
+
+#### 3. Usage Report (`UsageReportView.tsx`, `useUsageReport.ts`)
+
+Fetches `GET /reports/usage`. Query params: `from` (ISO date), `to` (ISO date), `type`, `userId`.
+Displays:
+
+- `totalAllocations`, `averageAllocationDays`
+- `topUsers` list
+- `conditionReportsByMonth` chart data
+
+#### 4. Warranty Expiry (`WarrantyExpiryView.tsx`, `useWarrantyExpiry.ts`)
+
+Fetches `GET /reports/warranty-expiry`. Query param: `daysAhead` (default 30).
+Displays:
+
+- Asset list with `daysUntilExpiry` and `suggestedAction` (REASSIGN_AS_SPARE | DECOMMISSION | RENEW_WARRANTY)
+- Each row links to the asset detail page
+
+---
+
+## Feature Specification: Notifications (notifications)
+
+### Overview
+
+In-app notification system for all authenticated users. Alerts users (especially Admins/Managers) about system events such as warranty expirations and low stock.
+
+### Feature Tech Stack
+
+- **Routing:** Integrated into the global Navbar (no dedicated route)
+- **Server State:** TanStack Query v5 (`useQuery`, `useMutation`)
+- **Global Client State:** React Context API (`AuthContext`)
+
+### Directory Structure
+
+```
+src/app/
+├── (shared)/
+│   └── components/
+│       └── NotificationBell.tsx   # Navbar bell with unread count badge
+└── notifications/
+    ├── api/
+    │   └── notifications-api.ts
+    └── hooks/
+        ├── useNotifications.ts          # GET /notifications
+        ├── useMarkNotificationRead.ts   # PATCH /notifications/{id}/read
+        ├── useNotificationPreferences.ts # GET /notifications/preferences
+        └── useUpdatePreferences.ts      # PUT /notifications/preferences
+```
+
+### API Endpoints
+
+| Method | Endpoint                     | Roles             | Description                     |
+| ------ | ---------------------------- | ----------------- | ------------------------------- |
+| GET    | `/notifications`             | All authenticated | Get user's notifications        |
+| PATCH  | `/notifications/{id}/read`   | All authenticated | Mark a notification as read     |
+| GET    | `/notifications/preferences` | All authenticated | Get notification preferences    |
+| PUT    | `/notifications/preferences` | All authenticated | Update notification preferences |
+
+### Logic Workflow
+
+#### 1. Notification Bell (`NotificationBell.tsx`)
+
+- Lives in the global Navbar rendered by `dashboard/layout.tsx`
+- Calls `GET /notifications` on mount and polls periodically (e.g., every 60s via `refetchInterval`)
+- Displays a badge with the count of items where `read === false`
+- Clicking opens a dropdown listing the latest notifications
+- Each notification item calls `PATCH /notifications/{id}/read` on click (`useMarkNotificationRead`)
+
+#### 2. Notification Types
+
+Notification `type` field values to handle:
+
+- `WARRANTY_EXPIRY` — link to asset detail or warranty report
+- Additional types may be added; render a generic fallback for unknown types
+
+#### 3. Notification Preferences
+
+- Accessible via user profile settings or a dedicated preferences page
+- Fetches `GET /notifications/preferences`: `{ warrantyExpiryAlerts, lowStockAlerts, emailNotifications, daysBeforeWarrantyAlert }`
+- Updates via `PUT /notifications/preferences`
+- **Validation:** `daysBeforeWarrantyAlert` ∈ 1..365 (Zod)
+
+---
+
+## Role Permission Summary
+
+| Feature                  | DEVELOPER       | MANAGER | ADMIN |
+| ------------------------ | --------------- | ------- | ----- |
+| Auth (register/login)    | ✅              | ✅      | ✅    |
+| View own profile         | ✅              | ✅      | ✅    |
+| View all users           | ❌              | ✅      | ✅    |
+| Manage user roles        | ❌              | ❌      | ✅    |
+| Delete users             | ❌              | ❌      | ✅    |
+| View own assets          | ✅              | ✅      | ✅    |
+| View all assets          | ❌              | ✅      | ✅    |
+| Create/update assets     | ❌              | ✅      | ✅    |
+| Delete assets            | ❌              | ❌      | ✅    |
+| Allocate/return assets   | ❌              | ✅      | ✅    |
+| View allocation history  | ❌              | ✅      | ✅    |
+| Submit condition reports | ✅ (own assets) | ✅      | ✅    |
+| Manage condition reports | ❌              | ✅      | ✅    |
+| View reports & analytics | ❌              | ✅      | ✅    |
+| Manage notifications     | ✅              | ✅      | ✅    |
+
+---
+
+## Global Error Codes Reference
+
+| HTTP | Code                        | Frontend Handling                     |
+| ---- | --------------------------- | ------------------------------------- |
+| 400  | BAD_REQUEST                 | Show generic form error               |
+| 401  | UNAUTHORIZED                | Clear auth, redirect to `/auth/login` |
+| 403  | FORBIDDEN                   | Redirect to `/dashboard`              |
+| 404  | \*\_NOT_FOUND               | Show "not found" UI state             |
+| 409  | \*\_CONFLICT                | Map to specific field via `setError`  |
+| 409  | LAST_ADMIN_PROTECTION       | Map to `root` error                   |
+| 409  | USER_HAS_ACTIVE_ALLOCATIONS | Show specific modal error             |
+| 409  | ASSET_ALREADY_ASSIGNED      | Map to `root` in AllocationModal      |
+| 409  | NO_ACTIVE_ALLOCATION        | Map to `root` in AllocationModal      |
+| 422  | VALIDATION_ERROR            | Map `error.details[]` to form fields  |
+| 500  | INTERNAL_ERROR              | Map to `root.serverError`             |
