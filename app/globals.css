@@ -28,8 +28,6 @@
 }
 
 :root {
-  color-scheme: light; /* ← add this as the first line */
-
   --background: oklch(0.984 0.005 247);
   --foreground: oklch(0.22 0.04 260);
   --card: oklch(1 0 0);
