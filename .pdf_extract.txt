@@ -1,0 +1,798 @@
+Page 1
+AssetTrack — Frontend Functional Requirements
+AssetTrack
+Frontend Functional Requirements
+Version 1.0 · May 2026
+Project
+AssetTrack — IT Asset Management System
+Frontend Stack
+Next.js · Tailwind CSS · TanStack Query v5 · Zod · React Hook Form
+Base API
+http://localhost:8080/api/v1
+Auth
+Bearer JWT — Authorization header
+Roles
+DEVELOPER · MANAGER · ADMIN
+State Pattern
+URL-as-State (filters) + AuthContext (identity) + TanStack Query (server)
+Table of Contents
+1.
+Global Architecture & Conventions
+2.
+Authentication (auth)
+3.
+Dashboard (dashboard)
+4.
+User Management (users)
+5.
+Asset Management (assets)
+6.
+Condition Reports (condition-reports)
+7.
+Reports & Analytics (reports)
+8.
+Notifications (notifications)
+9.
+Role Permission Matrix
+10.
+API Error Code Reference
+
+Page 2
+AssetTrack — Frontend Functional Requirements
+1. Global Architecture & Conventions
+1.1 Tech Stack
+Next.js App Router
+Routing — /auth/*, /dashboard, /users/*, /assets/*, /condition-reports/*, /reports
+Tailwind CSS
+Styling — utility-first, no global CSS sheets
+React Hook Form + Zod
+Form state & validation — zodResolver bridges schemas to forms
+TanStack Query v5
+Server state — useQuery (reads), useMutation (writes), cache invalidation
+URL Search Params
+UI filter & pagination state — URL is single source of truth
+React Context API
+Global identity — AuthContext stores token + user profile (id, name, role)
+Lucide React
+Icon library
+1.2 Standard API Envelope
+Every API response is wrapped in a consistent envelope. Clients must check success first, then read data (success) or
+error (failure). Paginated responses include data.items[] and data.pagination { page (0-indexed), size, totalElements,
+totalPages }.
+1.3 Zero-Local-State Error Pattern
+Rule: Never use useState to track server errors in forms. All mutation errors are mapped through React Hook Form's
+setError:
+ Field errors (409/422) → setError("fieldName", { message })
+ Auth errors (401) → setError("root", { message }) — never field-specific (prevents enumeration)
+ Server errors (500) → setError("root.serverError", { message })
+1.4 URL-as-State (Filters & Pagination)
+Rule: Filter and pagination state live exclusively in URL query params via useSearchParams(). Zod schemas coerce URL
+strings to typed values and translate UI 1-indexed pages to API 0-indexed pages. Updates use router.replace() —
+triggering automatic TanStack Query refetch via the query key.
+
+Page 3
+AssetTrack — Frontend Functional Requirements
+2. Authentication (auth)
+Handles user identity, secure token storage, and initial application entry. Routes: /auth/login and /auth/register.
+2.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+POST
+/auth/register
+Public
+Register a new user. Returns user data (no
+token). Redirect to login on success.
+POST
+/auth/login
+Public
+Authenticate and receive JWT. Returns
+accessToken + user { id, name, role }.
+2.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-A01
+The /auth layout must be strictly presentational — centered card, branding
+only, no route protection logic.
+All
+MUST
+FR-A02
+Registration form must collect: name (1–120 chars), email (valid format,
+lowercased before submit), password (min 8 chars, 1 upper + 1 lower + 1
+number + 1 special).
+All
+MUST
+FR-A03
+API must not be called if client-side Zod validation fails (email format,
+password complexity).
+All
+MUST
+FR-A04
+On successful registration (201), redirect to /auth/login. Do NOT attempt to
+extract a token — the register response contains no accessToken.
+All
+MUST
+FR-A05
+On 409 EMAIL_CONFLICT during registration, map error to
+setError("email", { message: "An account with this email already exists." }).
+All
+MUST
+FR-A06
+Login form must collect email (valid format) and password (non-empty).
+All
+MUST
+FR-A07
+On successful login (200), extract accessToken and user { id, name, role }
+from data. Call AuthContext.login(token, user). Store JWT and user profile
+in localStorage.
+All
+MUST
+FR-A08
+After successful login, navigate to router.push("/dashboard").
+All
+MUST
+FR-A09
+On 401 UNAUTHORIZED during login, map strictly to setError("root", {
+message: "Invalid email or password" }). Never map to a specific field.
+All
+MUST
+FR-A10
+On 500 INTERNAL_ERROR, map to setError("root.serverError", {
+message: "..." }).
+All
+MUST
+
+Page 4
+AssetTrack — Frontend Functional Requirements
+3. Dashboard (dashboard)
+The secure primary navigation hub. Adapts UI based on user role (RBAC).
+3.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+GET
+/reports/dashboard
+ADMIN, MANAGER
+Live KPI data for AdminManagerView.
+GET
+/notifications
+All auth
+Fetch unread notifications for
+NotificationBell.
+3.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-D01
+Dashboard layout.tsx must verify auth via AuthContext on every render. If
+no valid session, redirect to /auth/login immediately.
+All
+MUST
+FR-D02
+The global Navbar must be rendered by dashboard/layout.tsx and include:
+company branding, dynamic user greeting, NotificationBell, and user profile
+dropdown with logout.
+All
+MUST
+FR-D03
+Logout action must clear AuthContext state and localStorage, then redirect
+to /auth/login.
+All
+MUST
+FR-D04
+page.tsx must read user.role from AuthContext and render DeveloperView
+for DEVELOPER role, AdminManagerView for ADMIN or MANAGER role.
+All
+MUST
+FR-D05
+AdminManagerView must display live KPI cards from GET
+/reports/dashboard: total assets, open condition reports count, warranty
+expirations in 30 days.
+ADMIN, MANAGER
+MUST
+FR-D06
+AdminManagerView must display navigation cards to: /users (Personnel),
+/assets (Inventory), /condition-reports (Reports), /reports (Analytics).
+ADMIN, MANAGER
+MUST
+FR-D07
+"Assign Roles" navigation or UI affordance in AdminManagerView must be
+hidden/disabled unless user.role === "ADMIN".
+MANAGER
+MUST
+FR-D08
+DeveloperView must show navigation to: My Equipment
+(/assets?assignedUserId={id}), Spare Laptops, Report Issue, My Profile.
+DEVELOPER
+MUST
+FR-D09
+NotificationBell must display an unread count badge. Clicking opens a
+dropdown of latest notifications. Polling interval: 60 seconds via
+refetchInterval.
+All
+MUST
+
+Page 5
+AssetTrack — Frontend Functional Requirements
+4. User Management (users)
+Personnel directory and individual profiles. Strict RBAC via layout guards and UI element rendering.
+4.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+GET
+/users
+ADMIN, MANAGER
+List all users. Params: page, size, role.
+GET
+/users/{id}
+ADMIN, MANAGER,
+self
+Get a single user profile including
+assignedAssets.
+PATCH
+/users/{id}/role
+ADMIN only
+Update user role. Body: { role:
+ADMIN|MANAGER|DEVELOPER }.
+DELET
+E
+/users/{id}
+ADMIN only
+Delete a user account.
+4.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-U01
+users/layout.tsx must redirect DEVELOPER attempting to access /users
+(list) to /dashboard.
+DEVELOPER
+MUST
+FR-U02
+DEVELOPER accessing /users/[id] must be granted access only if id ===
+currentUser.id (own profile). Otherwise redirect to /dashboard.
+DEVELOPER
+MUST
+FR-U03
+UserTable.tsx must completely hide "Edit Role" and "Delete" action buttons
+unless user.role === "ADMIN". Managers can view but not modify.
+MANAGER
+MUST
+FR-U04
+All filter/pagination state must live in the URL (useSearchParams). No
+useState for filters. Zod schema translates UI page=1 to API page=0.
+ADMIN, MANAGER
+MUST
+FR-U05
+Filter bar must support: role (ADMIN|MANAGER|DEVELOPER), page,
+size. Zod validates page >=0 and size 1–100.
+ADMIN, MANAGER
+MUST
+FR-U06
+TanStack Query filter object (from URL) must be the query key — URL
+changes trigger automatic background refetch.
+ADMIN, MANAGER
+MUST
+FR-U07
+Role update (PATCH /users/{id}/role) must use UpdateRoleModal. Role
+schema must be enum: ADMIN | MANAGER | DEVELOPER.
+ADMIN
+MUST
+FR-U08
+On 409 LAST_ADMIN_PROTECTION, map to setError("root", { message:
+"Cannot remove the last admin." }).
+ADMIN
+MUST
+FR-U09
+Delete user (DELETE /users/{id}): on 409
+USER_HAS_ACTIVE_ALLOCATIONS show specific error "Return the
+user's assigned assets first". On 422 (self-delete), block the action.
+ADMIN
+MUST
+FR-U10
+On any successful mutation (role update, delete), call
+queryClient.invalidateQueries for ["users"] and ["user", id] to instantly
+refresh the UI.
+ADMIN
+MUST
+
+Page 6
+AssetTrack — Frontend Functional Requirements
+5. Asset Management (assets)
+Manages lifecycle of hardware (Laptops, Monitors, Accessories) and their allocation.
+5.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+GET
+/assets
+ADMIN, MANAGER
+List assets with filters: type, status, brand,
+assignedUserId, warrantyExpiresBefore,
+page, size.
+POST
+/assets
+ADMIN, MANAGER
+Register a new asset.
+GET
+/assets/{id}
+ADMIN, MANAGER,
+DEVELOPER (own)
+Full asset details including allocationHistory
+and conditionReports.
+PUT
+/assets/{id}
+ADMIN, MANAGER
+Update asset metadata.
+DELET
+E
+/assets/{id}
+ADMIN only
+Decommission/delete an asset.
+GET
+/assets/spare-laptops
+All auth
+Available spare laptops.
+GET
+/assets/search
+ADMIN, MANAGER
+Free-text search across serial, brand,
+model.
+GET
+/assets/{id}/allocations
+ADMIN, MANAGER
+Full allocation history for an asset.
+POST
+/assets/{id}/allocations
+ADMIN, MANAGER
+Assign asset to user. Body: { userId }.
+DELET
+E
+/assets/{id}/allocations
+ADMIN, MANAGER
+Return (unassign) asset.
+5.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-AS0
+1
+assets/layout.tsx must verify auth. For DEVELOPER accessing /assets/[id],
+verify via API/cache that asset.assignedTo.id === currentUser.id —
+otherwise redirect to /dashboard.
+All
+MUST
+FR-AS0
+2
+page.tsx renders AdminAssetView for ADMIN/MANAGER (full inventory +
+all actions) and DeveloperAssetView for DEVELOPER (own assets + spare
+laptops, condition reports only).
+All
+MUST
+FR-AS0
+3
+All asset list filtering and pagination must live in URL. Filters: type, status,
+brand, assignedUserId, warrantyExpiresBefore, page, size. Zod coerces
+and validates all params.
+ADMIN, MANAGER
+MUST
+FR-AS0
+4
+AssetFormModal (Create/Update) must block submission via Zod until:
+brand ≤80 chars, model ≤120 chars, serialNumber ≤100 chars,
+purchaseDate ≤ today, warrantyExpirationDate ≥ purchaseDate.
+ADMIN, MANAGER
+MUST
+FR-AS0
+5
+On 409 SERIAL_NUMBER_CONFLICT, map to setError("serialNumber", {
+message: "Serial number already exists." }).
+ADMIN, MANAGER
+MUST
+
+Page 7
+AssetTrack — Frontend Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-AS0
+6
+AllocationModal must handle assign (POST) and return (DELETE) actions.
+On 409 ASSET_ALREADY_ASSIGNED or NO_ACTIVE_ALLOCATION,
+map to setError("root", ...).
+ADMIN, MANAGER
+MUST
+FR-AS0
+7
+Asset Detail page (/assets/[id]) must display allocationHistory table from
+GET /assets/{id}/allocations (ADMIN/MANAGER only) and
+conditionReports list.
+ADMIN, MANAGER
+MUST
+FR-AS0
+8
+DeleteAssetCard must be rendered only if user.role === "ADMIN". A
+confirmation dialog is required before firing the delete mutation.
+ADMIN
+MUST
+FR-AS0
+9
+Asset search (/assets/search) must support free-text q param + type,
+status, assignedUserId, brand, warrantyExpired (boolean) filters. Separate
+from column filters.
+ADMIN, MANAGER
+MUST
+FR-AS1
+0
+GET /assets/spare-laptops is accessible by all authenticated users
+including DEVELOPER (from DeveloperView).
+All
+MUST
+
+Page 8
+AssetTrack — Frontend Functional Requirements
+6. Condition Reports (condition-reports)
+Allows Developers to report hardware issues on assigned assets. Admins and Managers review, update status, and
+resolve reports.
+6.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+POST
+/assets/{id}/condition-reports
+DEVELOPER (own),
+ADMIN, MANAGER
+Submit a new condition report.
+GET
+/condition-reports
+ADMIN, MANAGER
+List all reports. Params: status, severity,
+assetId, page, size.
+PATCH
+/condition-reports/{id}
+ADMIN, MANAGER
+Update status and/or resolution.
+6.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-CR0
+1
+All authenticated users can submit condition reports on assets they own.
+DEVELOPER is blocked from submitting on assets not assigned to them.
+All
+MUST
+FR-CR0
+2
+DEVELOPER can only view their own submitted reports.
+ADMIN/MANAGER see all reports via AdminConditionReportView.
+All
+MUST
+FR-CR0
+3
+ReportIssueForm Zod validation: issue (min 10 chars, non-blank), severity
+(enum: LOW|MEDIUM|HIGH).
+All
+MUST
+FR-CR0
+4
+On 422 VALIDATION_ERROR, map error.details fields (issue, severity) to
+their respective form fields via setError.
+All
+MUST
+FR-CR0
+5
+Condition report list must support URL-based filtering: status
+(OPEN|IN_PROGRESS|RESOLVED), severity (LOW|MEDIUM|HIGH),
+assetId, page, size.
+ADMIN, MANAGER
+MUST
+FR-CR0
+6
+ResolveReportModal must validate allowed status transitions: OPEN ->
+IN_PROGRESS -> RESOLVED. Client must enforce these transitions.
+ADMIN, MANAGER
+MUST
+FR-CR0
+7
+RESOLVED status update requires a non-empty resolution text field. Zod
+must enforce this.
+ADMIN, MANAGER
+MUST
+FR-CR0
+8
+On successful submission (201), invalidate ["condition-reports"] and
+["asset", assetId] query keys.
+All
+MUST
+FR-CR0
+9
+On successful resolve/update, invalidate ["condition-reports"] and
+["condition-report", id] query keys.
+ADMIN, MANAGER
+MUST
+
+Page 9
+AssetTrack — Frontend Functional Requirements
+7. Reports & Analytics (reports)
+Provides ADMIN and MANAGER roles with data-driven insights. DEVELOPER access is blocked — redirected to
+/dashboard.
+7.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+GET
+/reports/dashboard
+ADMIN, MANAGER
+Aggregate KPI statistics: total assets by
+type/status, warranty alerts, open reports.
+GET
+/reports/usage
+ADMIN, MANAGER
+Asset usage & allocation history. Params:
+from, to (ISO date), type, userId.
+GET
+/reports/warranty-expiry
+ADMIN, MANAGER
+Assets with upcoming/past warranty expiry.
+Param: daysAhead (default 30).
+7.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-R01
+reports/layout.tsx must block DEVELOPER role and redirect to /dashboard.
+DEVELOPER
+MUST
+FR-R02
+DashboardStatsPanel must display totalAssets, byType breakdown,
+byStatus breakdown, warrantyExpiringIn30Days, openConditionReports —
+all from GET /reports/dashboard.
+ADMIN, MANAGER
+MUST
+FR-R03
+UsageReportView must display: totalAllocations, averageAllocationDays,
+topUsers list, conditionReportsByMonth chart. Supports date range filter
+(from/to) via URL params.
+ADMIN, MANAGER
+MUST
+FR-R04
+WarrantyExpiryView must display asset list with daysUntilExpiry and
+suggestedAction (REASSIGN_AS_SPARE | DECOMMISSION |
+RENEW_WARRANTY). Each row links to the asset detail page.
+ADMIN, MANAGER
+MUST
+FR-R05
+daysAhead filter for warranty expiry must be configurable via URL param
+(integer). Default: 30.
+ADMIN, MANAGER
+SHOULD
+
+Page 10
+AssetTrack — Frontend Functional Requirements
+8. Notifications (notifications)
+In-app notification system for all authenticated users.
+8.1 API Endpoints
+Metho
+d
+Endpoint
+Roles
+Description
+GET
+/notifications
+All auth
+Get user notifications. Filter by read status.
+PATCH
+/notifications/{id}/read
+All auth
+Mark a single notification as read.
+GET
+/notifications/preferences
+All auth
+Get notification preferences for current user.
+PUT
+/notifications/preferences
+All auth
+Update notification preferences.
+8.2 Functional Requirements
+ID
+Requirement
+Roles
+Priority
+FR-N01
+NotificationBell component in Navbar must show an unread count badge
+(count of items where read === false).
+All
+MUST
+FR-N02
+NotificationBell must poll GET /notifications every 60 seconds via TanStack
+Query refetchInterval.
+All
+MUST
+FR-N03
+Clicking a notification item must call PATCH /notifications/{id}/read,
+optimistically or after response update the unread count.
+All
+MUST
+FR-N04
+Notification preferences must be editable: warrantyExpiryAlerts (bool),
+lowStockAlerts (bool), emailNotifications (bool), daysBeforeWarrantyAlert
+(int 1–365).
+All
+MUST
+FR-N05
+Zod validation for daysBeforeWarrantyAlert: integer in range 1–365.
+All
+MUST
+FR-N06
+Notification type WARRANTY_EXPIRY must render a link to the relevant
+asset detail page.
+All
+SHOULD
+FR-N07
+Unknown notification types must render a generic fallback (icon + message
+text only).
+All
+SHOULD
+
+Page 11
+AssetTrack — Frontend Functional Requirements
+9. Role Permission Matrix
+Feature / Action
+ DEVELOPER
+ MANAGER
+ ADMIN
+Auth — Register / Login
+ YES
+ YES
+ YES
+View own profile
+ YES
+ YES
+ YES
+View all users list
+ NO
+ YES
+ YES
+View other user profiles
+ NO
+ YES
+ YES
+Manage user roles (PATCH)
+ NO
+ NO
+ YES
+Delete users (DELETE)
+ NO
+ NO
+ YES
+View own assets
+ YES
+ YES
+ YES
+View all assets inventory
+ NO
+ YES
+ YES
+Create / Update assets
+ NO
+ YES
+ YES
+Delete / Decommission assets
+ NO
+ NO
+ YES
+Allocate / Return assets
+ NO
+ YES
+ YES
+View allocation history
+ NO
+ YES
+ YES
+View spare laptops
+ YES
+ YES
+ YES
+Asset free-text search
+ NO
+ YES
+ YES
+Submit condition reports
+ OWN
+ YES
+ YES
+Manage condition reports (PATCH)
+ NO
+ YES
+ YES
+View reports & analytics
+ NO
+ YES
+ YES
+Manage notifications & preferences
+ YES
+ YES
+ YES
+
+Page 12
+AssetTrack — Frontend Functional Requirements
+10. API Error Code Reference
+HTT
+P
+Error Code
+Meaning
+Frontend Handling
+400
+BAD_REQUEST
+Malformed body or missing fields
+Show generic form error
+401
+UNAUTHORIZED
+Missing or expired JWT
+Clear auth, redirect to /auth/login
+403
+FORBIDDEN
+Authenticated but wrong role
+Redirect to /dashboard
+404
+*_NOT_FOUND
+Resource does not exist
+Show "not found" empty state UI
+409
+EMAIL_CONFLICT
+Duplicate email on register
+setError("email", ...)
+409
+SERIAL_NUMBER_CONFLICT
+Duplicate asset serial number
+setError("serialNumber", ...)
+409
+ASSET_ALREADY_ASSIGNED
+Asset already deployed
+setError("root", ...) in AllocationModal
+409
+NO_ACTIVE_ALLOCATION
+Nothing to return
+setError("root", ...) in AllocationModal
+409
+USER_HAS_ACTIVE_ALLOCATI
+ONS
+Cannot delete user with assets
+Show specific message in
+DeleteUserModal
+409
+LAST_ADMIN_PROTECTION
+Cannot remove last admin
+setError("root", ...) in UpdateRoleModal
+422
+VALIDATION_ERROR
+Semantic validation failure
+Map error.details[] fields to
+setError(field, ...)
+500
+INTERNAL_ERROR
+Unexpected server failure
+setError("root.serverError", ...)
+ AssetTrack Frontend Functional Requirements v1.0 — May 2026
