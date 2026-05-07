@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9])/;
-
 export const loginSchema = z.object({
   email: z
     .string()

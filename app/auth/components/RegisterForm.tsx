@@ -34,12 +34,12 @@ export function RegisterForm() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold text-foreground">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-foreground">
           Create your account
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Start managing your team's equipment.
+        <p className="text-sm text-muted-foreground mt-2">
+          Start managing your team&apos;s equipment.
         </p>
       </div>
 
@@ -82,7 +82,7 @@ export function RegisterForm() {
               className="pr-10"
               aria-invalid={!!errors.password}
             />
-            <button
+            <Button
               type="button"
               onClick={() => setShowPassword((prev) => !prev)}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
@@ -92,7 +92,7 @@ export function RegisterForm() {
               ) : (
                 <Eye className="h-4 w-4" />
               )}
-            </button>
+            </Button>
           </div>
           {errors.password && (
             <p className="text-xs text-destructive">
