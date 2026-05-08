@@ -9,6 +9,7 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+./pixel-perfect-clone-40026
 
 # testing
 /coverage
