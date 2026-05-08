@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/context/AuthContext";
@@ -9,58 +9,49 @@ import { ArrowLeft } from "lucide-react";
 import { UserProfileHeader } from "./components/UserProfileHeader";
 import { UserAssignedAssets } from "./components/UserAssignedAssets";
 import { UserActivityTimeline } from "./components/UserActivityTimeline";
-import { UserActionModals } from "./components/UserActionModals";
+import { UserActionModals } from "../components/UserActionModals";
+import UserProfile from "../interfaces/UserProfile";
 
-// Dummy data for testing without backend
-const dummyUser = {
+const dummyUser: UserProfile = {
   id: "user-123",
-  name: "John Doe",
-  email: "john.doe@example.com",
-  role: "DEVELOPER" as const,
-  createdAt: "2024-01-15T10:30:00Z",
+  name: "Alex Morgan",
+  email: "admin@assettrack.dev",
+  role: "ADMIN",
+  createdAt: "2024-02-12T10:30:00Z",
   assignedAssets: [
     {
       id: "asset-001",
-      brand: "Apple",
-      model: 'MacBook Pro 16"',
-      serialNumber: "A2345B78901",
-      type: "LAPTOP" as const,
-      status: "ASSIGNED" as const,
+      brand: "Dell",
+      model: "XPS 15",
+      serialNumber: "SN123456789",
+      type: "LAPTOP",
+      status: "ASSIGNED",
     },
     {
       id: "asset-002",
-      brand: "Dell",
-      model: "UltraSharp U2724D",
-      serialNumber: "D9876C54321",
-      type: "MONITOR" as const,
-      status: "ASSIGNED" as const,
+      brand: "LG",
+      model: "UltraFine 27",
+      serialNumber: "SN987654321",
+      type: "MONITOR",
+      status: "ASSIGNED",
     },
   ],
 };
 
 interface UserPageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
 export default function UserPage({ params }: UserPageProps) {
-  const { id: userId } = params as any;
+  const userId = params.id;
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const { data: user, isLoading } = useUser(userId);
-  const [editUser, setEditUser] = useState<any | null>(null);
-  const [deleteUser, setDeleteUser] = useState<any | null>(null);
+  const [editUser, setEditUser] = useState<UserProfile | null>(null);
+  const [deleteUser, setDeleteUser] = useState<UserProfile | null>(null);
 
-  // RBAC Check: Developer can only view own profile
-  useEffect(() => {
-    if (currentUser?.role === "DEVELOPER" && currentUser.id !== userId) {
-      router.push("/dashboard");
-    }
-  }, [currentUser, userId, router]);
-
-  const isAdmin = currentUser?.role === "ADMIN";
-
-  // Use dummy data if backend data is unavailable
-  const profileData = user || dummyUser;
+  const profileData: UserProfile = currentUser || dummyUser;
+  const isAdmin = profileData?.role === "ADMIN";
 
   if (isLoading && !user) {
     return (
@@ -72,14 +63,14 @@ export default function UserPage({ params }: UserPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Back Link */}
         <Link
           href="/users"
-          className="inline-flex items-center gap-2 text-primary hover:text-primary/80 mb-8"
+          className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Users</span>
+          Back to directory
         </Link>
 
         {/* Profile Header */}
@@ -90,11 +81,14 @@ export default function UserPage({ params }: UserPageProps) {
           onDeleteClick={setDeleteUser}
         />
 
-        {/* Assigned Assets */}
-        <UserAssignedAssets assets={profileData.assignedAssets} />
-
-        {/* Activity Timeline */}
-        <UserActivityTimeline createdAt={profileData.createdAt} />
+        {/* Assets + Activity side by side */}
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
+          <UserAssignedAssets assets={profileData.assignedAssets} />
+          <UserActivityTimeline
+            createdAt={profileData.createdAt}
+            role={profileData.role}
+          />
+        </div>
       </div>
 
       {/* Action Modals */}

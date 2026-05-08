@@ -6,7 +6,8 @@ import { useUserFilters } from "./hooks/useUserFilters";
 import { useUsers } from "./hooks/useUsers";
 import { UsersHeaderAndFilters } from "./components/UsersHeaderAndFilters";
 import { UsersTable } from "./components/UsersTable";
-import { UserModals } from "./components/UserModals";
+import { UserActionModals } from "./components/UserActionModals";
+import UserProfile from "./interfaces/UserProfile";
 
 // Dummy data for testing without backend
 const dummyUsers = [
@@ -32,14 +33,6 @@ const dummyUsers = [
     createdAt: "2023-01-03",
   },
 ];
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: "ADMIN" | "MANAGER" | "DEVELOPER";
-  createdAt: string;
-}
 
 export default function UsersPage() {
   // Auth & Filters
@@ -80,11 +73,12 @@ export default function UsersPage() {
         onDeleteClick={setDeleteUser}
       />
 
-      <UserModals
+      <UserActionModals
         editUser={editUser}
         deleteUser={deleteUser}
         onCloseEdit={() => setEditUser(null)}
         onCloseDelete={() => setDeleteUser(null)}
+        onDeleteSuccess={() => {}}
       />
     </div>
   );

@@ -2,7 +2,6 @@
 
 import { Badge } from "@/src/components/ui/badge";
 import { Card } from "@/src/components/ui/card";
-import { FileText } from "lucide-react";
 
 interface Asset {
   id: string;
@@ -19,28 +18,27 @@ interface UserAssignedAssetsProps {
 
 export function UserAssignedAssets({ assets = [] }: UserAssignedAssetsProps) {
   return (
-    <Card className="bg-card border-border p-8 mb-8">
-      <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-        <FileText className="w-5 h-5 text-accent" />
-        Assigned Assets
+    <Card className="bg-card border-border p-6 h-full">
+      <h2 className="text-base font-semibold mb-4">
+        Assigned Assets ({assets.length})
       </h2>
-      {assets && assets.length > 0 ? (
+      {assets.length > 0 ? (
         <div className="space-y-3">
-          {assets.map((asset: Asset) => (
+          {assets.map((asset) => (
             <div
               key={asset.id}
-              className="p-4 bg-secondary/50 border border-border rounded-lg hover:bg-secondary/40"
+              className="p-4 bg-secondary/40 border border-border rounded-lg"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold">{asset.brand}</p>
+                  <p className="font-medium text-sm">{asset.brand}</p>
                   <p className="text-sm text-muted-foreground">{asset.model}</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Serial: {asset.serialNumber}
                   </p>
                 </div>
-                <div className="text-right">
-                  <Badge variant="outline" className="mb-2">
+                <div className="text-right space-y-1">
+                  <Badge variant="outline" className="text-xs">
                     {asset.type}
                   </Badge>
                   <p className="text-xs text-muted-foreground">
@@ -52,7 +50,9 @@ export function UserAssignedAssets({ assets = [] }: UserAssignedAssetsProps) {
           ))}
         </div>
       ) : (
-        <p className="text-muted-foreground">No assets assigned</p>
+        <p className="text-sm text-muted-foreground">
+          No assets currently assigned.
+        </p>
       )}
     </Card>
   );

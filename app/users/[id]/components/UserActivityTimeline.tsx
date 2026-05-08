@@ -4,22 +4,30 @@ import { Card } from "@/src/components/ui/card";
 
 interface UserActivityTimelineProps {
   createdAt: string;
+  role?: "ADMIN" | "MANAGER" | "DEVELOPER";
 }
 
-export function UserActivityTimeline({ createdAt }: UserActivityTimelineProps) {
+export function UserActivityTimeline({
+  createdAt,
+  role,
+}: UserActivityTimelineProps) {
+  const date = new Date(createdAt).toLocaleDateString("en-CA"); // YYYY-MM-DD
+
+  const events = [
+    { label: "Account created", date },
+    ...(role ? [{ label: `Role assigned: ${role}`, date }] : []),
+  ];
+
   return (
-    <Card className="bg-card border-border p-8">
-      <h2 className="text-xl font-bold mb-6">Activity</h2>
+    <Card className="bg-card border-border p-6 h-full">
+      <h2 className="text-base font-semibold mb-4">Activity</h2>
       <div className="space-y-4">
-        <div className="flex gap-4">
-          <div className="w-3 h-3 rounded-full bg-primary mt-1.5" />
-          <div>
-            <p className="font-semibold">Account created</p>
-            <p className="text-sm text-muted-foreground">
-              {new Date(createdAt).toLocaleDateString()}
-            </p>
+        {events.map((event, i) => (
+          <div key={i}>
+            <p className="text-sm font-medium">{event.label}</p>
+            <p className="text-xs text-muted-foreground">{event.date}</p>
           </div>
-        </div>
+        ))}
       </div>
     </Card>
   );

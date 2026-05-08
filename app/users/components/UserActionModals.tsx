@@ -40,10 +40,11 @@ import {
 } from "@/src/components/ui/select";
 import { useUpdateRole } from "../hooks/useUpdateRole";
 import { useDeleteUser } from "../hooks/useDeleteUser";
+import UserProfile from "../interfaces/UserProfile";
 
 interface UserActionModalsProps {
-  editUser: any | null;
-  deleteUser: any | null;
+  editUser: UserProfile | null;
+  deleteUser: UserProfile | null;
   onCloseEdit: () => void;
   onCloseDelete: () => void;
   onDeleteSuccess: () => void;
@@ -60,30 +61,37 @@ export function UserActionModals({
     resolver: zodResolver(updateRoleSchema),
   });
 
-  // Sync form when editUser changes
   useEffect(() => {
     if (editUser) {
       form.reset({ role: editUser.role });
     }
   }, [editUser, form]);
 
-  const { mutate: updateRole, isPending: isUpdating } = useUpdateRole({
-    setError: form.setError,
-    onSuccessCallback: () => {
+  const {
+    mutate: updateRole,
+    isPending: isUpdating,
+    isSuccess: isUpdateSuccess,
+  } = useUpdateRole({ setError: form.setError });
+
+  const {
+    mutate: deleteUserMutation,
+    isPending: isDeleting,
+    isSuccess: isDeleteSuccess,
+  } = useDeleteUser();
+
+  useEffect(() => {
+    if (isUpdateSuccess) {
       onCloseEdit();
       form.reset();
-    },
-  });
+    }
+  }, [isUpdateSuccess]);
 
-  const { mutate: deleteUserMutation, isPending: isDeleting } = useDeleteUser({
-    onSuccessCallback: () => {
+  useEffect(() => {
+    if (isDeleteSuccess) {
       onCloseDelete();
       onDeleteSuccess();
-    },
-    onErrorCallback: (message: string) => {
-      // Error handling is done within the mutation
-    },
-  });
+    }
+  }, [isDeleteSuccess]);
 
   const handleUpdateRole = (input: UpdateRoleInput) => {
     if (!editUser) return;
@@ -98,7 +106,7 @@ export function UserActionModals({
   return (
     <>
       {/* Edit Role Dialog */}
-      <Dialog open={!!editUser} onOpenChange={() => onCloseEdit()}>
+      <Dialog open={!!editUser} onOpenChange={(o) => !o && onCloseEdit()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit User Role</DialogTitle>
@@ -145,16 +153,12 @@ export function UserActionModals({
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => onCloseEdit()}
+                  onClick={onCloseEdit}
                   disabled={isUpdating}
                 >
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  className="bg-primary text-primary-foreground"
-                  disabled={isUpdating}
-                >
+                <Button type="submit" disabled={isUpdating}>
                   {isUpdating ? "Updating..." : "Update Role"}
                 </Button>
               </DialogFooter>
@@ -164,7 +168,10 @@ export function UserActionModals({
       </Dialog>
 
       {/* Delete User Confirmation Dialog */}
-      <AlertDialog open={!!deleteUser} onOpenChange={() => onCloseDelete()}>
+      <AlertDialog
+        open={!!deleteUser}
+        onOpenChange={(o) => !o && onCloseDelete()}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete User</AlertDialogTitle>
