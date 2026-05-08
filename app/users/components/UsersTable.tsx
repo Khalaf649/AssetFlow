@@ -41,7 +41,7 @@ export function UsersTable({
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <Table>
         <TableHeader className="bg-secondary/50">
-          <TableRow>
+          <TableRow className="hover:bg-secondary/40 border-border">
             <TableHead>User</TableHead>
             <TableHead>Email</TableHead>
             <TableHead>Role</TableHead>
@@ -57,7 +57,10 @@ export function UsersTable({
               .slice(0, 2)
               .join("");
             return (
-              <TableRow key={u.id} className="hover:bg-secondary/40">
+              <TableRow
+                key={u.id}
+                className="hover:bg-secondary/40 border-border"
+              >
                 <TableCell>
                   <Link
                     href={`/users/${u.id}`}
@@ -85,6 +88,7 @@ export function UsersTable({
                     <Button
                       variant="outline"
                       size="sm"
+                      className="hover:bg-primary hover:text-primary-foreground hover:border-primary"
                       onClick={() => onEditClick(u)}
                     >
                       Edit
@@ -94,7 +98,7 @@ export function UsersTable({
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:bg-primary hover:text-primary-foreground"
                       onClick={() => onDeleteClick(u)}
                     >
                       Delete
