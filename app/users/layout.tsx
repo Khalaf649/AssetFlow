@@ -1,28 +1,20 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/auth/context/AuthContext";
+import { DashboardNavbar } from "../dashboard/components/Navbar";
 
 export default function UsersLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const router = useRouter();
-  const { user, token } = useAuth();
-
-  //   useEffect(() => {
-  //     // Check if user is authenticated
-  //     if (!token) {
-  //       router.push("/auth/login");
-  //       return;
-  //     }
-
-  //     // Check if user has access to users section
-  //     // DEVELOPER users can only access their own profile via /users/[id]
-  //     // This layout will not prevent it because the route-specific page will handle the check
-  //   }, [token, router]);
-
-  return <>{children}</>;
+  return (
+    // <ProtectedLayout>
+    <div className="flex flex-col min-h-screen bg-background">
+      <DashboardNavbar />
+      <main className="flex-1 mx-auto w-full max-w-350 px-6 py-10">
+        {children}
+      </main>
+    </div>
+    // </ProtectedLayout>
+  );
 }
