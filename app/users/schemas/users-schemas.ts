@@ -7,8 +7,8 @@ export const assetSchema = z.object({
   brand: z.string(),
   model: z.string(),
   serialNumber: z.string(),
-  type: z.string(),
-  status: z.string(),
+  type: z.enum(["LAPTOP", "MONITOR", "ACCESSORY"]),
+  status: z.enum(["AVAILABLE", "ASSIGNED", "UNDER_REPAIR", "DECOMMISSIONED"]),
 });
 
 export const userSchema = z.object({

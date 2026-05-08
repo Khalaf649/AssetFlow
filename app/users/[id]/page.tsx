@@ -50,8 +50,8 @@ export default function UserPage({ params }: UserPageProps) {
   const [editUser, setEditUser] = useState<UserProfile | null>(null);
   const [deleteUser, setDeleteUser] = useState<UserProfile | null>(null);
 
-  const profileData: UserProfile = currentUser || dummyUser;
-  const isAdmin = profileData?.role === "ADMIN";
+  const profileData: UserProfile = user || dummyUser;
+  const isAdmin = currentUser?.role === "ADMIN";
 
   if (isLoading && !user) {
     return (
