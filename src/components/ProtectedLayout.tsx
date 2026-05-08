@@ -1,16 +1,9 @@
 "use client";
 
-<<<<<<< HEAD
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-=======
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/app/auth/context/AuthContext"; // Adjust import path if needed
-import { Loader2 } from "lucide-react";
->>>>>>> reports-feature
 
 export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -18,11 +11,7 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-<<<<<<< HEAD
       router.replace("/auth/login");
-=======
-      router.push("/auth/login");
->>>>>>> reports-feature
     }
   }, [isAuthenticated, isLoading, router]);
 
@@ -35,17 +24,8 @@ export function ProtectedLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!isAuthenticated) {
-<<<<<<< HEAD
     return null;
   }
 
   return <>{children}</>;
-=======
-    // Return null to prevent the UI from flashing before the redirect happens
-    return null;
-  }
-
-  // If authenticated, render the protected content
-  return children;
->>>>>>> reports-feature
 }

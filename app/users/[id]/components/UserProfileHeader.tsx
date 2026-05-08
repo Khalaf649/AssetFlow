@@ -5,14 +5,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { Card } from "@/src/components/ui/card";
 import { ShieldCheck, Trash2, Mail } from "lucide-react";
 import { getRoleBadgeStyles } from "../../components/badges-utils";
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: "ADMIN" | "MANAGER" | "DEVELOPER";
-  createdAt: string;
-}
+import UserProfile from "../../interfaces/UserProfile";
 
 interface UserProfileHeaderProps {
   user: UserProfile;

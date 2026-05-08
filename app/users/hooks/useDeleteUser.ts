@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteUser, ApiError } from "../api/users-api";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { toast } from "sonner";
+import { queryKeys } from "@/src/lib/query-keys";
 
 export function useDeleteUser() {
   const { token } = useAuth();
@@ -13,7 +14,7 @@ export function useDeleteUser() {
       return deleteUser(token, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       toast.success("User deleted successfully");
     },
     onError: (error: unknown) => {

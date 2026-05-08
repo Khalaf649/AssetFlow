@@ -18,11 +18,9 @@ import { DashboardCard } from "./DashboardCard";
 export function AdminManagerView() {
   const { user } = useAuth();
   const { data: reports, isLoading, isError } = useDashboardReports();
-  const currentUser = user || {
-    id: "dev-user-1",
-    name: "Developer User",
-    role: "ADMIN" as const,
-  };
+
+  // ProtectedLayout guarantees user is non-null
+  if (!user) return null;
 
   if (isLoading) {
     return (
@@ -45,7 +43,7 @@ export function AdminManagerView() {
     );
   }
 
-  const isAdmin = currentUser.role === "ADMIN";
+  const isAdmin = user.role === "ADMIN";
 
   return (
     <div className="space-y-8">

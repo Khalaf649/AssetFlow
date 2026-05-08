@@ -84,14 +84,14 @@ export function UserActionModals({
       onCloseEdit();
       form.reset();
     }
-  }, [isUpdateSuccess]);
+  }, [isUpdateSuccess, onCloseEdit, form]);
 
   useEffect(() => {
     if (isDeleteSuccess) {
       onCloseDelete();
       onDeleteSuccess();
     }
-  }, [isDeleteSuccess]);
+  }, [isDeleteSuccess, onCloseDelete, onDeleteSuccess]);
 
   const handleUpdateRole = (input: UpdateRoleInput) => {
     if (!editUser) return;
@@ -126,6 +126,7 @@ export function UserActionModals({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
+                      value={field.value}
                     >
                       <FormControl>
                         <SelectTrigger>

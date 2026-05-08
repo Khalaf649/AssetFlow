@@ -36,7 +36,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
     if (!isLoading && !allowed) {
       router.replace("/dashboard");
     }
-  }, [isLoading, allowed]);
+  }, [isLoading, allowed, router]);
 
   if (isLoading) {
     return (

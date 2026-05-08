@@ -1,14 +1,14 @@
 "use client";
 
 import { Laptop, Monitor, AlertTriangle, UserCog } from "lucide-react";
+import { useAuth } from "@/app/auth/context/AuthContext";
 import { DashboardCard } from "./DashboardCard";
 
 export function DeveloperView() {
-  //   const { user } = useAuth();
-  const user = {
-    id: "dev-user-1",
-    name: "Developer User",
-  };
+  const { user } = useAuth();
+
+  // ProtectedLayout guarantees user is non-null
+  if (!user) return null;
 
   return (
     <div className="space-y-8">
@@ -30,7 +30,7 @@ export function DeveloperView() {
           icon={Laptop}
         />
         <DashboardCard
-          to="/assets/spare-laptops"
+          to="/assets?type=LAPTOP&status=AVAILABLE"
           title="Spare Laptops"
           description="Browse spare laptops available to request."
           icon={Monitor}

@@ -4,6 +4,7 @@ import {
   fetchDashboardReports,
   fetchNotifications,
 } from "../api/dashboard-api";
+import { queryKeys } from "@/src/lib/query-keys";
 
 // Mock data for frontend testing
 const mockDashboardReports = {
@@ -45,7 +46,7 @@ export function useDashboardReports() {
   const { token } = useAuth();
 
   return useQuery({
-    queryKey: ["dashboardReports"],
+    queryKey: queryKeys.dashboard.reports,
     queryFn: async () => {
       // Use mock data if no token (frontend testing mode)
       if (!token) return mockDashboardReports;
@@ -60,7 +61,7 @@ export function useNotifications() {
   const { token } = useAuth();
 
   return useQuery({
-    queryKey: ["notifications"],
+    queryKey: queryKeys.notifications.all,
     queryFn: async () => {
       // Use mock data if no token (frontend testing mode)
       if (!token) return mockNotifications;

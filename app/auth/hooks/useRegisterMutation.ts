@@ -2,8 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { UseFormSetError } from "react-hook-form";
 import { registerUser, ApiError } from "../api/auth-api";
-import { useToast } from "@/src/hooks/use-toast";
 import { RegisterInput } from "../schemas/auth-schemas";
+import { toast } from "sonner";
 
 // We require the component to pass us its setError function
 interface UseRegisterOptions {
@@ -12,23 +12,17 @@ interface UseRegisterOptions {
 
 export function useRegisterMutation({ setError }: UseRegisterOptions) {
   const router = useRouter();
-  const { toast } = useToast();
 
   return useMutation({
     mutationFn: (data: RegisterInput) =>
       registerUser(data.name, data.email, data.password),
 
     onSuccess: () => {
-      // Show success message and redirect to login
-      toast({
-        title: "Account created",
-        description: "Please sign in with your credentials.",
-      });
+      toast.success("Account created — please sign in with your credentials.");
       router.push("/auth/login");
     },
 
     onError: (error) => {
-      // All the messy error mapping is hidden away in the hook
       if (error instanceof ApiError) {
         if (error.code === "EMAIL_CONFLICT") {
           setError("email", {
@@ -41,17 +35,11 @@ export function useRegisterMutation({ setError }: UseRegisterOptions) {
             });
           });
         } else {
-          toast({
-            title: "Registration failed",
-            description: error.message,
-            variant: "destructive",
-          });
+          setError("root.serverError", { message: error.message });
         }
       } else {
-        toast({
-          title: "Registration failed",
-          description: "An unexpected error occurred",
-          variant: "destructive",
+        setError("root.serverError", {
+          message: "An unexpected error occurred",
         });
       }
     },

@@ -41,8 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
-      } catch (error) {
-        console.error("Failed to restore auth state:", error);
+      } catch {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
       }
