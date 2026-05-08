@@ -1,19 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Boxes } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Boxes, LogOut, Settings, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { NotificationBell } from "./NotificationBell";
-import Dropdown from "./Dropdown";
+import { Avatar, AvatarFallback } from "@/src/components/ui/avatar";
+import { Badge } from "@/src/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/src/components/ui/dropdown-menu";
 
-interface NavLinks {
+const NAV_LINKS: Array<{
   to: string;
   label: string;
   roles: ReadonlyArray<"ADMIN" | "MANAGER" | "DEVELOPER">;
-}
-
-const NAV_LINKS: Array<NavLinks> = [
+}> = [
   {
     to: "/dashboard",
     label: "Dashboard",
@@ -30,8 +37,8 @@ const NAV_LINKS: Array<NavLinks> = [
 ];
 
 export function DashboardNavbar() {
-  const { user: authUser } = useAuth();
-
+  const { user: authUser, logout } = useAuth();
+  const router = useRouter();
   const pathname = usePathname();
 
   // Mock user for frontend testing
@@ -42,6 +49,17 @@ export function DashboardNavbar() {
   };
 
   const user = authUser || mockUser;
+
+  const initials = user.name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("");
+
+  const handleLogout = () => {
+    logout();
+    router.push("/auth/login");
+  };
 
   const visibleLinks = NAV_LINKS.filter((link) =>
     link.roles.includes(user.role),
@@ -82,7 +100,44 @@ export function DashboardNavbar() {
           <NotificationBell />
 
           {/* User Dropdown */}
-          <Dropdown />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-full pl-1 pr-2 py-1 hover:bg-muted transition-colors">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-accent text-accent-foreground text-xs font-semibold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="hidden sm:flex items-center gap-2 text-sm">
+                  <span className="font-medium text-foreground">
+                    {user.name}
+                  </span>
+                  <Badge
+                    variant="secondary"
+                    className="bg-accent/10 text-accent border-0 text-[10px] py-0 font-semibold"
+                  >
+                    {user.role}
+                  </Badge>
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuLabel>{user.name}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href={`/users/${user.id}`}>
+                  <UserIcon className="h-4 w-4 mr-2" /> My profile
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled>
+                <Settings className="h-4 w-4 mr-2" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" /> Logout
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>

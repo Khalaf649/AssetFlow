@@ -1,6 +1,10 @@
 import * as React from "react";
 
+<<<<<<< HEAD
 import { cn } from "@/src/lib/utils";
+=======
+import { cn } from "@/lib/utils";
+>>>>>>> reports-feature
 
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(
   ({ className, ...props }, ref) => (

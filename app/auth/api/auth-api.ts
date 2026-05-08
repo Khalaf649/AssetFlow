@@ -81,6 +81,13 @@ export async function loginUser(
   return unwrapResponse<LoginResponse>(response);
 }
 
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  return localStorage.getItem('auth_token');
+}
+
 export async function registerUser(
   name: string,
   email: string,
@@ -106,4 +113,4 @@ export async function registerUser(
   return unwrapResponse<RegisterResponse>(response);
 }
 
-export { ApiError };
+export { ApiError, getAuthToken };

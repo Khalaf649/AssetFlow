@@ -9,7 +9,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/src/components/ui/popover";
-import { NotificationItem } from "./NotificationItem";
 
 export function NotificationBell() {
   const { data } = useNotifications();
@@ -43,11 +42,29 @@ export function NotificationBell() {
         <ul className="max-h-80 overflow-auto divide-y divide-border">
           {data?.items && data.items.length > 0 ? (
             data.items.map((notification) => (
-              <NotificationItem
+              <li
                 key={notification.id}
-                notification={notification}
-                onNotificationClick={handleNotificationClick}
-              />
+                onClick={() => handleNotificationClick(notification.id)}
+                className={`p-4 cursor-pointer hover:bg-muted transition-colors ${
+                  !notification.read
+                    ? "bg-accent/5 border-l-2 border-l-accent"
+                    : ""
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">
+                      {notification.type}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {notification.message}
+                    </p>
+                  </div>
+                  {!notification.read && (
+                    <div className="h-2 w-2 rounded-full bg-accent mt-1 ml-2 flex-shrink-0" />
+                  )}
+                </div>
+              </li>
             ))
           ) : (
             <li className="p-4 text-center text-xs text-muted-foreground">

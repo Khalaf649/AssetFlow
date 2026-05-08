@@ -9,7 +9,10 @@
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+<<<<<<< HEAD
 ./pixel-perfect-clone-40026
+=======
+>>>>>>> reports-feature
 
 # testing
 /coverage
@@ -40,3 +43,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+<<<<<<< HEAD
+=======
+
+# Ignore the downloaded project zip file
+pixel-perfect-clone-40026-main.zip
+
+pixel-perfect-clone-40026-main/
+>>>>>>> reports-feature
