@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteAsset, ApiError } from "../api/assets-api";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { toast } from "sonner";
+import { queryKeys } from "@/src/lib/query-keys";
 
 export function useDeleteAsset() {
   const { token } = useAuth();
@@ -13,7 +14,7 @@ export function useDeleteAsset() {
       return deleteAsset(token, id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.all });
       toast.success("Asset decommissioned successfully");
     },
     onError: (error: unknown) => {

@@ -1,5 +1,5 @@
 export function getRoleBadgeStyles(
-  role: "ADMIN" | "MANAGER" | "DEVELOPER" | string,
+  role: "ADMIN" | "MANAGER" | "DEVELOPER",
 ) {
   switch (role) {
     case "ADMIN":

@@ -4,6 +4,7 @@ import { UpdateRoleInput } from "../schemas/users-schemas";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { UseFormSetError } from "react-hook-form";
 import { toast } from "sonner";
+import { queryKeys } from "@/src/lib/query-keys";
 
 interface UseUpdateRoleOptions {
   setError: UseFormSetError<UpdateRoleInput>;
@@ -24,9 +25,9 @@ export function useUpdateRole({ setError }: UseUpdateRoleOptions) {
       if (!token) throw new Error("No authentication token");
       return updateUserRole(token, id, input);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["users"] });
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
       toast.success("Role updated successfully");
     },
     onError: (error: unknown) => {

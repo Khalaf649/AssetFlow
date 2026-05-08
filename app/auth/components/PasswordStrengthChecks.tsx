@@ -25,7 +25,7 @@ export function PasswordStrengthChecks({
           <li
             key={check.label}
             className={`flex items-center gap-2 text-xs ${
-              isValid ? "text-green-600" : "text-muted-foreground"
+              isValid ? "text-success" : "text-muted-foreground"
             }`}
           >
             {isValid ? (

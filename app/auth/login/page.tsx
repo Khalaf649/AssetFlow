@@ -1,9 +1,21 @@
 "use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { LoginForm } from "../components/LoginForm";
 import { useAuth } from "../context/AuthContext";
-import { redirect } from "next/navigation";
+
 export default function LoginPage() {
   const { user } = useAuth();
-  if (!user) return <LoginForm />;
-  else return redirect("/dashboard");
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      router.replace("/dashboard");
+    }
+  }, [user, router]);
+
+  if (user) return null;
+
+  return <LoginForm />;
 }

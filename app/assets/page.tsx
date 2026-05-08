@@ -7,15 +7,10 @@ import { DeveloperAssetView } from "./components/DeveloperAssetView";
 export default function AssetsPage() {
   const { user } = useAuth();
 
-  const mockUser = {
-    id: "dev-user-1",
-    name: "Developer User",
-    role: "ADMIN" as const,
-  };
-  const currentUser = user || mockUser;
+  // ProtectedLayout guarantees user is non-null
+  if (!user) return null;
 
-  const isStaff =
-    currentUser.role === "ADMIN" || currentUser.role === "MANAGER";
+  const isStaff = user.role === "ADMIN" || user.role === "MANAGER";
 
   return isStaff ? <AdminAssetView /> : <DeveloperAssetView />;
 }

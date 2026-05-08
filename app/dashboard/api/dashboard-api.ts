@@ -1,17 +1,6 @@
-const API_BASE_URL = "http://localhost:8080/api/v1";
+import { apiFetch, ApiError } from "@/src/lib/api-client";
 
-interface ApiResponse<T> {
-  success: boolean;
-  status: number;
-  message: string;
-  data?: T;
-  error?: {
-    code: string;
-    details?: Array<{ field: string; message: string }>;
-  };
-}
-
-interface DashboardReport {
+export interface DashboardReport {
   totalAssets: number;
   byType: {
     LAPTOP: number;
@@ -28,7 +17,7 @@ interface DashboardReport {
   openConditionReports: number;
 }
 
-interface Notification {
+export interface Notification {
   id: string;
   type: string;
   message: string;
@@ -36,7 +25,7 @@ interface Notification {
   createdAt: string;
 }
 
-interface NotificationsResponse {
+export interface NotificationsResponse {
   items: Notification[];
   pagination: {
     page: number;
@@ -46,104 +35,26 @@ interface NotificationsResponse {
   };
 }
 
-class ApiError extends Error {
-  constructor(
-    message: string,
-    public code: string,
-    public details?: Array<{ field: string; message: string }>,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-
-async function unwrapResponse<T>(response: Response): Promise<T> {
-  const data: ApiResponse<T> = await response.json();
-
-  if (!data.success) {
-    throw new ApiError(
-      data.message,
-      data.error?.code || "UNKNOWN_ERROR",
-      data.error?.details,
-    );
-  }
-
-  if (!data.data) {
-    throw new ApiError("No data in response", "NO_DATA");
-  }
-
-  return data.data;
-}
-
 export async function fetchDashboardReports(
   token: string,
 ): Promise<DashboardReport> {
-  const response = await fetch(`${API_BASE_URL}/reports/dashboard`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorData: ApiResponse<never> = await response.json();
-    throw new ApiError(
-      errorData.message,
-      errorData.error?.code || "FETCH_FAILED",
-      errorData.error?.details,
-    );
-  }
-
-  return unwrapResponse<DashboardReport>(response);
+  return apiFetch<DashboardReport>("/reports/dashboard", { token });
 }
 
 export async function fetchNotifications(
   token: string,
 ): Promise<NotificationsResponse> {
-  const response = await fetch(`${API_BASE_URL}/notifications`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  if (!response.ok) {
-    const errorData: ApiResponse<never> = await response.json();
-    throw new ApiError(
-      errorData.message,
-      errorData.error?.code || "FETCH_FAILED",
-      errorData.error?.details,
-    );
-  }
-
-  return unwrapResponse<NotificationsResponse>(response);
+  return apiFetch<NotificationsResponse>("/notifications", { token });
 }
 
 export async function markNotificationRead(
   token: string,
   notificationId: string,
 ): Promise<void> {
-  const response = await fetch(
-    `${API_BASE_URL}/notifications/${notificationId}/read`,
-    {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    const errorData: ApiResponse<never> = await response.json();
-    throw new ApiError(
-      errorData.message,
-      errorData.error?.code || "UPDATE_FAILED",
-      errorData.error?.details,
-    );
-  }
+  return apiFetch<void>(`/notifications/${notificationId}/read`, {
+    method: "PATCH",
+    token,
+  });
 }
 
 export { ApiError };

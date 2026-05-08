@@ -12,15 +12,8 @@ import {
 } from "@/src/components/ui/table";
 import { Badge } from "@/src/components/ui/badge";
 import { getRoleBadgeStyles } from "./badges-utils";
+import UserProfile from "../interfaces/UserProfile";
 import Link from "next/link";
-
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  role: "ADMIN" | "MANAGER" | "DEVELOPER";
-  createdAt: string;
-}
 
 interface UsersTableProps {
   users: UserProfile[];

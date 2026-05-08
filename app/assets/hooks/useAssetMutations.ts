@@ -4,6 +4,7 @@ import { AssetFormInput } from "../schemas/asset-schemas";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { UseFormSetError } from "react-hook-form";
 import { toast } from "sonner";
+import { queryKeys } from "@/src/lib/query-keys";
 
 interface UseAssetMutationOptions {
   setError: UseFormSetError<AssetFormInput>;
@@ -23,7 +24,7 @@ export function useCreateAsset({
       return createAsset(token, input);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.all });
       toast.success("Asset created successfully");
       onSuccess?.();
     },
@@ -64,8 +65,8 @@ export function useUpdateAsset({
       return updateAsset(token, id, input);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
-      queryClient.invalidateQueries({ queryKey: ["asset", variables.id] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.detail(variables.id) });
       toast.success("Asset updated successfully");
       onSuccess?.();
     },

@@ -9,33 +9,7 @@ import { UsersTable } from "./components/UsersTable";
 import { UserActionModals } from "./components/UserActionModals";
 import UserProfile from "./interfaces/UserProfile";
 
-// Dummy data for testing without backend
-const dummyUsers = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john.doe@example.com",
-    role: "ADMIN" as const,
-    createdAt: "2023-01-01",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane.smith@example.com",
-    role: "MANAGER" as const,
-    createdAt: "2023-01-02",
-  },
-  {
-    id: "3",
-    name: "Bob Johnson",
-    email: "bob.johnson@example.com",
-    role: "DEVELOPER" as const,
-    createdAt: "2023-01-03",
-  },
-];
-
 export default function UsersPage() {
-  // Auth & Filters
   const { user } = useAuth();
   const { filters, setFilter } = useUserFilters();
   const { data: usersData, isLoading } = useUsers(filters);
@@ -44,17 +18,12 @@ export default function UsersPage() {
   const [deleteUser, setDeleteUser] = useState<UserProfile | null>(null);
   const [editUser, setEditUser] = useState<UserProfile | null>(null);
 
-  // Current User
-  const mockUser = {
-    id: "dev-user-1",
-    name: "Developer User",
-    role: "ADMIN" as const,
-  };
-  const currentUser = user || mockUser;
-  const isAdmin = currentUser?.role === "ADMIN";
+  // ProtectedLayout guarantees user is non-null
+  if (!user) return null;
 
-  // Data
-  const users = usersData?.items || dummyUsers;
+  const isAdmin = user.role === "ADMIN";
+
+  const users = usersData?.items || [];
   const totalElements = usersData?.pagination?.totalElements || 0;
 
   return (

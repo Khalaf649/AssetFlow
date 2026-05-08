@@ -4,6 +4,7 @@ import { AllocationInput } from "../schemas/asset-schemas";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { UseFormSetError } from "react-hook-form";
 import { toast } from "sonner";
+import { queryKeys } from "@/src/lib/query-keys";
 
 interface UseAllocationOptions {
   assetId: string;
@@ -25,10 +26,10 @@ export function useAssignAsset({
       return assignAsset(token, assetId, input);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
-      queryClient.invalidateQueries({ queryKey: ["asset", assetId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.detail(assetId) });
       queryClient.invalidateQueries({
-        queryKey: ["asset-allocations", assetId],
+        queryKey: queryKeys.assets.allocations(assetId),
       });
       toast.success("Asset assigned successfully");
       onSuccess?.();
@@ -69,10 +70,10 @@ export function useReturnAsset({
       return returnAsset(token, assetId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assets"] });
-      queryClient.invalidateQueries({ queryKey: ["asset", assetId] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.assets.detail(assetId) });
       queryClient.invalidateQueries({
-        queryKey: ["asset-allocations", assetId],
+        queryKey: queryKeys.assets.allocations(assetId),
       });
       toast.success("Asset returned successfully");
       onSuccess?.();

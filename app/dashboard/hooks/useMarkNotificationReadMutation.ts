@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { markNotificationRead } from "../api/dashboard-api";
 import { useAuth } from "@/app/auth/context/AuthContext";
+import { queryKeys } from "@/src/lib/query-keys";
 
 export function useMarkNotificationReadMutation() {
   const queryClient = useQueryClient();
@@ -12,7 +13,7 @@ export function useMarkNotificationReadMutation() {
       return markNotificationRead(token, notificationId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
   });
 }

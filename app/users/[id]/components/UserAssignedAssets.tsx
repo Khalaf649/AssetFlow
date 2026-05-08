@@ -1,16 +1,7 @@
 import Link from "next/link";
 import { Card } from "@/src/components/ui/card";
 import { Badge } from "@/src/components/ui/badge";
-
-// Assuming your asset interface looks something like this:
-interface Asset {
-  id: string;
-  brand: string;
-  model: string;
-  serialNumber: string;
-  type: string;
-  status: string;
-}
+import type { Asset } from "../../schemas/users-schemas";
 
 interface UserAssignedAssetsProps {
   assets?: Asset[];

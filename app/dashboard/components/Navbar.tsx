@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Boxes, LogOut, Settings, User as UserIcon } from "lucide-react";
+import { Boxes, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { NotificationBell } from "./NotificationBell";
 import { Avatar, AvatarFallback } from "@/src/components/ui/avatar";
@@ -37,18 +37,12 @@ const NAV_LINKS: Array<{
 ];
 
 export function DashboardNavbar() {
-  const { user: authUser, logout } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  // Mock user for frontend testing
-  const mockUser = {
-    id: "dev-user-1",
-    name: "Developer User",
-    role: "ADMIN" as const,
-  };
-
-  const user = authUser || mockUser;
+  // ProtectedLayout guarantees user is non-null
+  if (!user) return null;
 
   const initials = user.name
     .split(" ")
@@ -128,9 +122,6 @@ export function DashboardNavbar() {
                 <Link href={`/users/${user.id}`}>
                   <UserIcon className="h-4 w-4 mr-2" /> My profile
                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled>
-                <Settings className="h-4 w-4 mr-2" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
