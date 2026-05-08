@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const mockUser = {
     id: "dev-user-1",
     name: "Developer",
-    role: "DEVELOPER" as const,
+    role: "ADMIN" as const,
   };
 
   const currentUser = user || mockUser;
