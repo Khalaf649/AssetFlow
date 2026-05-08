@@ -2,12 +2,8 @@
 
 import { Loader2 } from 'lucide-react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow,
 } from '@/src/components/ui/table';
 import { Card } from '@/src/components/ui/card';
 import { useConditionReports, useReportFilters } from '../hooks/useConditionReports';
@@ -18,19 +14,14 @@ interface DeveloperReportsListProps {
   userId: string;
 }
 
-/**
- * DeveloperReportsList - Shows the developer's own condition reports
- * Limited to read-only view - no editing capabilities
- */
 export function DeveloperReportsList({ userId }: DeveloperReportsListProps) {
   const { filters } = useReportFilters();
-  // Filter to only show reports from this user
   const developerFilters = userId ? { ...filters, userId } : filters;
   const { data, isLoading, error } = useConditionReports(developerFilters);
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
         Failed to load your reports. Please try again.
       </div>
     );
@@ -39,57 +30,57 @@ export function DeveloperReportsList({ userId }: DeveloperReportsListProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
       </div>
     );
   }
 
   if (!data || data.items.length === 0) {
     return (
-      <Card className="p-8 text-center text-gray-500 dark:text-gray-400">
-        <p>No condition reports submitted yet.</p>
-        <p className="text-sm mt-2">Go to your assets to report any hardware issues.</p>
-      </Card>
+      <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+        <p className="text-sm">No condition reports submitted yet.</p>
+        <p className="text-sm mt-1">Go to your assets to report any hardware issues.</p>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden">
+    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
       <Table>
-        <TableHeader className="bg-gray-50 dark:bg-gray-900">
-          <TableRow>
-            <TableHead>Asset ID</TableHead>
-            <TableHead>Issue</TableHead>
-            <TableHead>Severity</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Submitted</TableHead>
+        <TableHeader>
+          <TableRow className="bg-white border-b border-gray-200 hover:bg-white">
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">Asset</TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">Issue</TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">Severity</TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">Status</TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.items.map((report: ConditionReportResponse) => (
             <TableRow
               key={report.id}
-              className="hover:bg-gray-50 dark:hover:bg-gray-900"
+              className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
             >
-              <TableCell className="font-medium text-blue-600 dark:text-blue-400">
-                {report.assetId}
+              <TableCell className="font-semibold text-gray-900 py-4">
+                {report.assetName ?? report.assetId}
               </TableCell>
-              <TableCell className="max-w-xs truncate text-gray-700 dark:text-gray-300">
+              <TableCell className="text-gray-700 py-4 max-w-xs truncate">
                 {report.issue}
               </TableCell>
-              <TableCell>
+              <TableCell className="py-4">
                 <SeverityBadge severity={report.severity} />
               </TableCell>
-              <TableCell>
+              <TableCell className="py-4">
                 <ReportStatusBadge status={report.status} />
               </TableCell>
-              <TableCell className="text-gray-600 dark:text-gray-400 text-sm">
-                {new Date(report.createdAt).toLocaleDateString()}
+              <TableCell className="text-gray-500 text-sm py-4">
+                {new Date(report.createdAt).toISOString().slice(0, 10)}
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-    </Card>
+    </div>
   );
 }

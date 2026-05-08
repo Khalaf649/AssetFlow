@@ -1,93 +1,35 @@
 'use client';
 
+import { Input } from '@/src/components/ui/input';
 import { Button } from '@/src/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/src/components/ui/select';
-import { X } from 'lucide-react';
-import { ReportStatus, Severity } from '../schemas/condition-report-schemas';
+import { Search, X } from 'lucide-react';
 import { useReportFilters } from '../hooks/useConditionReports';
 
-/**
- * ConditionReportFilterBar - URL-based filter controls for the reports list
- * Allows filtering by status, severity, and assetId
- */
 export function ConditionReportFilterBar() {
   const { filters, setFilter, resetFilters } = useReportFilters();
 
-  const hasActiveFilters = filters.status || filters.severity || filters.assetId;
-
-  const statuses: ReportStatus[] = ['OPEN', 'IN_PROGRESS', 'RESOLVED'];
-  const severities: Severity[] = ['LOW', 'MEDIUM', 'HIGH'];
+  const hasActiveSearch = !!filters.assetId;
 
   return (
-    <div className="flex flex-wrap gap-3 items-end">
-      {/* Status Filter */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Status
-        </label>
-        <Select
-          value={filters.status || ''}
-          onValueChange={(value) =>
-            setFilter({ status: (value || undefined) as ReportStatus | undefined, page: 0 })
-          }
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All statuses</SelectItem>
-            {statuses.map((status) => (
-              <SelectItem key={status} value={status}>
-                {status.replace('_', ' ')}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+    <div className="flex items-center gap-2 w-full max-w-sm">
+      <div className="relative flex-1">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Input
+          placeholder="Search by asset name..."
+          value={filters.assetId || ''}
+          onChange={(e) => setFilter({ assetId: e.target.value || undefined, page: 0 })}
+          className="pl-9 pr-9 bg-white border-gray-200 rounded-md text-sm placeholder:text-gray-400 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500"
+        />
+        {hasActiveSearch && (
+          <button
+            onClick={resetFilters}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            title="Clear search"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
       </div>
-
-      {/* Severity Filter */}
-      <div className="flex flex-col gap-2">
-        <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          Severity
-        </label>
-        <Select
-          value={filters.severity || ''}
-          onValueChange={(value) =>
-            setFilter({ severity: (value || undefined) as Severity | undefined, page: 0 })
-          }
-        >
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="All severities" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">All severities</SelectItem>
-            {severities.map((severity) => (
-              <SelectItem key={severity} value={severity}>
-                {severity}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Clear Filters Button */}
-      {hasActiveFilters && (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={resetFilters}
-          className="flex items-center gap-2"
-        >
-          <X className="h-4 w-4" />
-          Clear filters
-        </Button>
-      )}
     </div>
   );
 }

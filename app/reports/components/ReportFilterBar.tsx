@@ -8,9 +8,9 @@ export function ReportFilterBar() {
   const activeTab = searchParams.get('tab') ?? 'overview';
 
   const tabs = [
-    { key: 'overview', label: 'Overview' },
-    { key: 'usage', label: 'Usage Statistics' },
-    { key: 'warranty', label: 'Warranty Expiry' },
+    { key: 'overview', label: 'Overview'           },
+    { key: 'usage',    label: 'Usage Statistics'   },
+    { key: 'warranty', label: 'Warranty Expiry'    },
   ];
 
   const setTab = (tab: string) => {
@@ -23,16 +23,16 @@ export function ReportFilterBar() {
   };
 
   return (
-    <div className="border-b border-border">
-      <nav className="flex gap-1">
+    <div className="border-b border-gray-200">
+      <nav className="flex gap-0">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setTab(tab.key)}
-            className={`px-4 py-3 text-sm font-medium border-b-2 transition-all ${
+            className={`px-4 py-2 text-sm border-b-2 transition-all ${
               activeTab === tab.key
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                ? 'border-blue-500 text-blue-600 font-medium'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
             {tab.label}

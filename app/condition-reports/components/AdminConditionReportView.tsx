@@ -1,48 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell,
+  TableHead, TableHeader, TableRow,
 } from '@/src/components/ui/table';
 import { Button } from '@/src/components/ui/button';
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/src/components/ui/pagination';
+import { Tabs, TabsList, TabsTrigger } from '@/src/components/ui/tabs';
 import { useConditionReports, useReportFilters } from '../hooks/useConditionReports';
 import { SeverityBadge, ReportStatusBadge } from './Badges';
-import { ConditionReportFilterBar } from './ConditionReportFilterBar';
 import { ResolveReportModal } from './ResolveReportModal';
 import { ConditionReportResponse } from '../schemas/condition-report-schemas';
-import Link from 'next/link';
 
-/**
- * AdminConditionReportView - Full condition reports list for Admin/Manager
- * Includes filtering, pagination, and status management
- */
 export function AdminConditionReportView() {
-  const { filters, setFilter } = useReportFilters();
-  const { data, isLoading, error } = useConditionReports(filters);
+  const { filters, activeTab, setActiveTab } = useReportFilters();
+  const { data, isLoading, error } = useConditionReports({ ...filters, size: 100 });
   const [selectedReport, setSelectedReport] = useState<ConditionReportResponse | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-
-  if (error) {
-    return (
-      <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
-        Failed to load condition reports. Please try again.
-      </div>
-    );
-  }
 
   const handleOpenModal = (report: ConditionReportResponse) => {
     setSelectedReport(report);
@@ -54,153 +29,103 @@ export function AdminConditionReportView() {
     setSelectedReport(null);
   };
 
-  const handlePageChange = (newPage: number) => {
-    setFilter({ ...filters, page: newPage });
-  };
-
-  const pagination = data?.pagination;
-  const uiPage = (pagination?.page || 0) + 1; // Convert back to 1-indexed for display
+  if (error) {
+    return (
+      <div className="border border-red-200 bg-red-50 text-red-700 px-4 py-3 rounded text-sm">
+        Failed to load condition reports. Please try again.
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <AlertTriangle className="h-6 w-6 text-red-600" />
-        <h1 className="text-2xl font-semibold">Condition Reports</h1>
-      </div>
+    <div className="space-y-6 p-6">
 
-      {/* Filters */}
-      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-800">
-        <h3 className="text-sm font-semibold mb-4">Filters</h3>
-        <ConditionReportFilterBar />
-      </div>
+      {/* Title */}
+      <h1 className="text-2xl font-semibold flex items-center gap-2">
+        <AlertTriangle className="h-6 w-6 text-orange-500" />
+        Condition Reports
+      </h1>
 
-      {/* Reports Table */}
-      <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden bg-white dark:bg-gray-950">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="bg-transparent border-b border-gray-200 rounded-none p-0 h-auto gap-0 w-full justify-start">
+          {[
+            { value: 'all',         label: 'All'         },
+            { value: 'OPEN',        label: 'Open'        },
+            { value: 'IN_PROGRESS', label: 'In Progress' },
+            { value: 'RESOLVED',    label: 'Resolved'    },
+          ].map(({ value, label }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="rounded-none border-b-2 border-transparent px-4 py-2 text-sm text-gray-500
+                         data-[state=active]:border-blue-500 data-[state=active]:text-blue-600
+                         data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            >
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
+
+      <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+            <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           </div>
         ) : data && data.items.length > 0 ? (
-          <>
-            <Table>
-              <TableHeader className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-                <TableRow>
-                  <TableHead>Asset</TableHead>
-                  <TableHead>Reported By</TableHead>
-                  <TableHead>Issue</TableHead>
-                  <TableHead>Severity</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.items.map((report) => (
-                  <TableRow
-                    key={report.id}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-900 border-b border-gray-200 dark:border-gray-800"
-                  >
-                    <TableCell className="font-medium">
-                      <Link
-                        href={`/assets/${report.assetId}`}
-                        className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-white border-b border-gray-200 hover:bg-white">
+                <TableHead className="text-gray-600 font-semibold text-sm py-3">Asset</TableHead>
+                <TableHead className="text-gray-600 font-semibold text-sm py-3">Reported By</TableHead>
+                <TableHead className="text-gray-600 font-semibold text-sm py-3">Issue</TableHead>
+                <TableHead className="text-gray-600 font-semibold text-sm py-3">Severity</TableHead>
+                <TableHead className="text-gray-600 font-semibold text-sm py-3">Status</TableHead>
+                <TableHead className="text-gray-600 font-semibold text-sm py-3 bg-blue-50 text-blue-600">
+                  Date ▾
+                </TableHead>
+                <TableHead className="text-gray-600 font-semibold text-sm py-3">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {data.items.map((report) => (
+                <TableRow
+                  key={report.id}
+                  className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
+                >
+                  <TableCell className="font-semibold text-gray-900 py-4">
+                    {report.assetName ?? report.assetId}
+                  </TableCell>
+                  <TableCell className="text-gray-500 py-4">{report.reportedByName}</TableCell>
+                  <TableCell className="text-gray-700 py-4">{report.issue}</TableCell>
+                  <TableCell className="py-4">
+                    <SeverityBadge severity={report.severity} />
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <ReportStatusBadge status={report.status} />
+                  </TableCell>
+                  <TableCell className="text-gray-500 text-sm py-4">
+                    {new Date(report.createdAt).toISOString().slice(0, 10)}
+                  </TableCell>
+                  <TableCell className="py-4">
+                    {report.status !== 'RESOLVED' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleOpenModal(report)}
+                        className="text-sm border-gray-300 text-gray-700 hover:bg-gray-50"
                       >
-                        {report.assetId}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {report.reportedByName}
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate text-gray-700 dark:text-gray-300">
-                      {report.issue}
-                    </TableCell>
-                    <TableCell>
-                      <SeverityBadge severity={report.severity} />
-                    </TableCell>
-                    <TableCell>
-                      <ReportStatusBadge status={report.status} />
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400 text-sm">
-                      {new Date(report.createdAt).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {report.status !== 'RESOLVED' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleOpenModal(report)}
-                        >
-                          Resolve
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-              <div className="flex items-center justify-center p-4 border-t border-gray-200 dark:border-gray-800">
-                <Pagination>
-                  <PaginationContent>
-                    <PaginationItem>
-                      <PaginationPrevious
-                        onClick={() =>
-                          uiPage > 1 && handlePageChange(uiPage - 2)
-                        }
-                        className={uiPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                      />
-                    </PaginationItem>
-
-                    {Array.from({ length: pagination.totalPages }).map((_, i) => {
-                      const pageNum = i + 1;
-                      // Show current page and adjacent pages
-                      if (
-                        pageNum === uiPage ||
-                        pageNum === uiPage - 1 ||
-                        pageNum === uiPage + 1 ||
-                        pageNum === 1 ||
-                        pageNum === pagination.totalPages
-                      ) {
-                        return (
-                          <PaginationItem key={pageNum}>
-                            <PaginationLink
-                              onClick={() => handlePageChange(i)}
-                              isActive={pageNum === uiPage}
-                              className="cursor-pointer"
-                            >
-                              {pageNum}
-                            </PaginationLink>
-                          </PaginationItem>
-                        );
-                      }
-                      return null;
-                    })}
-
-                    <PaginationItem>
-                      <PaginationNext
-                        onClick={() =>
-                          uiPage < pagination.totalPages &&
-                          handlePageChange(uiPage)
-                        }
-                        className={
-                          uiPage === pagination.totalPages
-                            ? 'pointer-events-none opacity-50'
-                            : 'cursor-pointer'
-                        }
-                      />
-                    </PaginationItem>
-                  </PaginationContent>
-                </Pagination>
-              </div>
-            )}
-          </>
+                        Resolve
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-gray-500 dark:text-gray-400">
-            <AlertTriangle className="h-8 w-8 mb-2 opacity-50" />
-            <p>No condition reports found</p>
+          <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            <p className="text-sm">No condition reports found</p>
           </div>
         )}
       </div>
@@ -213,6 +138,7 @@ export function AdminConditionReportView() {
           report={selectedReport}
         />
       )}
+
     </div>
   );
 }

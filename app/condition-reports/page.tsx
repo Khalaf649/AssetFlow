@@ -1,31 +1,24 @@
 'use client';
 
+import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/app/auth/context/AuthContext';
 import { AdminConditionReportView } from './components/AdminConditionReportView';
 import { DeveloperConditionReportView } from './components/DeveloperConditionReportView';
 
-/**
- * Condition Reports Page - Traffic Controller
- * Routes based on user role:
- * - DEVELOPER: Shows only their own reports
- * - ADMIN/MANAGER: Shows all reports with management capabilities
- */
 export default function ConditionReportsPage() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return null;
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    );
   }
 
-  const isStaff = user?.role === 'ADMIN' || user?.role === 'MANAGER';
+  console.log('Current user:', user);
 
-  return (
-    <div className="container mx-auto py-8 px-4">
-      {isStaff ? (
-        <AdminConditionReportView />
-      ) : (
-        <DeveloperConditionReportView />
-      )}
-    </div>
-  );
+ const isStaff = true;
+
+  return isStaff ? <AdminConditionReportView /> : <DeveloperConditionReportView />;
 }

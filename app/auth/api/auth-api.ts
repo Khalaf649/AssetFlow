@@ -81,12 +81,11 @@ export async function loginUser(
   return unwrapResponse<LoginResponse>(response);
 }
 
-export function getAuthToken(): string | null {
+function getAuthToken(): string | null {
   if (typeof window === 'undefined') {
     return null;
   }
-
-  return localStorage.getItem('accessToken');
+  return localStorage.getItem('auth_token');
 }
 
 export async function registerUser(

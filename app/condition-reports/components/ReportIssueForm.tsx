@@ -1,28 +1,22 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
 import { Button } from '@/src/components/ui/button';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+  Form, FormControl, FormDescription,
+  FormField, FormItem, FormLabel, FormMessage,
 } from '@/src/components/ui/form';
 import { Textarea } from '@/src/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
 } from '@/src/components/ui/select';
 import { submitReportSchema, SubmitReportInput, Severity } from '../schemas/condition-report-schemas';
 import { useSubmitReport } from '../hooks/useConditionReports';
-import { useEffect } from 'react';
+import { SeverityBadge } from './Badges';
 
 interface ReportIssueFormProps {
   assetId: string;
@@ -32,11 +26,6 @@ interface ReportIssueFormProps {
 
 const SEVERITIES: Severity[] = ['LOW', 'MEDIUM', 'HIGH'];
 
-/**
- * ReportIssueForm - Form for submitting a new condition report
- * Used by all authenticated users on assets they own
- * Includes validation, error handling, and success callbacks
- */
 export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFormProps) {
   const { mutate: submitReport, isPending, error: submitError } = useSubmitReport(assetId);
 
@@ -48,7 +37,6 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
     },
   });
 
-  // Map API errors to form fields
   useEffect(() => {
     if (submitError && (submitError as any).details) {
       const details = (submitError as any).details as Array<{ field: string; message: string }>;
@@ -58,7 +46,6 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
     }
   }, [submitError, form]);
 
-  // Map server-side validation errors (422) to form fields
   useEffect(() => {
     if (submitError && (submitError as any).code === 'VALIDATION_ERROR') {
       form.setError('root', { message: submitError.message });
@@ -77,17 +64,18 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold">Report Issue</h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-          Asset: <span className="font-medium">{assetName}</span>
+        <h2 className="text-lg font-semibold text-gray-900">Report Issue</h2>
+        <p className="text-sm text-gray-500 mt-1">
+          Asset: <span className="font-medium text-gray-700">{assetName}</span>
         </p>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+
           {/* Root Error */}
           {form.formState.errors.root && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded dark:bg-red-900/20 dark:border-red-800 dark:text-red-400">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
               {form.formState.errors.root.message}
             </div>
           )}
@@ -98,19 +86,21 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
             name="issue"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Issue Description *</FormLabel>
+                <FormLabel className="text-sm font-medium text-gray-700">
+                  <>Issue Description <span className="text-red-500">*</span></>
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="Describe the issue in detail (minimum 10 characters)..."
-                    className="resize-none"
+                    className="resize-none border-gray-200 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 text-sm"
                     rows={4}
                     {...field}
                   />
                 </FormControl>
-                <FormDescription>
+                <FormDescription className="text-xs text-gray-400">
                   Provide a clear description of the hardware issue
                 </FormDescription>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -121,43 +111,56 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
             name="severity"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Severity Level *</FormLabel>
+                <FormLabel className="text-sm font-medium text-gray-700">
+                  <>Severity Level <span className="text-red-500">*</span></>
+                </FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="border-gray-200 focus:ring-1 focus:ring-blue-500 text-sm">
                       <SelectValue placeholder="Select severity" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
                     {SEVERITIES.map((severity) => (
                       <SelectItem key={severity} value={severity}>
-                        {severity}
+                        <div className="flex items-center gap-2">
+                          <SeverityBadge severity={severity} />
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>
+                <FormDescription className="text-xs text-gray-400">
                   Indicate how critical this issue is
                 </FormDescription>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
 
-          {/* Submit Button */}
-          <div className="flex gap-3">
-            <Button type="submit" disabled={isPending}>
-              {isPending ? 'Submitting...' : 'Submit Report'}
+          {/* Actions */}
+          <div className="flex gap-3 pt-1">
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-gray-900 hover:bg-gray-700 text-white text-sm"
+            >
+              {isPending
+                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Submitting...</>
+                : 'Submit Report'
+              }
             </Button>
             <Button
               type="button"
               variant="outline"
               onClick={() => form.reset()}
               disabled={isPending}
+              className="border-gray-200 text-gray-600 hover:bg-gray-50 text-sm"
             >
               Clear
             </Button>
           </div>
+
         </form>
       </Form>
     </div>
