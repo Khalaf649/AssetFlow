@@ -1,16 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteUser, ApiError } from "../api/users-api";
 import { useAuth } from "@/app/auth/context/AuthContext";
+import { toast } from "sonner";
 
-interface UseDeleteUserOptions {
-  onSuccessCallback?: () => void;
-  onErrorCallback?: (message: string) => void;
-}
-
-export function useDeleteUser({
-  onSuccessCallback,
-  onErrorCallback,
-}: UseDeleteUserOptions) {
+export function useDeleteUser() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -21,18 +14,18 @@ export function useDeleteUser({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-      onSuccessCallback?.();
+      toast.success("User deleted successfully");
     },
     onError: (error: unknown) => {
-      let message = "Failed to delete user";
       if (error instanceof ApiError) {
         if (error.code === "USER_HAS_ACTIVE_ALLOCATIONS") {
-          message = "Return user's assigned assets first";
+          toast.error("Return user's assigned assets first");
         } else {
-          message = error.message;
+          toast.error(error.message);
         }
+      } else {
+        toast.error("Failed to delete user");
       }
-      onErrorCallback?.(message);
     },
   });
 }

@@ -2,7 +2,6 @@
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +31,8 @@ import {
 } from "@/src/components/ui/select";
 import { useUpdateRole } from "../hooks/useUpdateRole";
 import { useDeleteUser } from "../hooks/useDeleteUser";
+import { UpdateRoleInput, updateRoleSchema } from "../schemas/users-schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 interface UserProfile {
   id: string;
@@ -54,49 +55,53 @@ export function UserModals({
   onCloseEdit,
   onCloseDelete,
 }: UserModalsProps) {
-  const form = useForm({
-    defaultValues: {
-      role: "DEVELOPER" as "ADMIN" | "MANAGER" | "DEVELOPER",
-    },
+  const form = useForm<UpdateRoleInput>({
+    resolver: zodResolver(updateRoleSchema),
   });
+
+  const {
+    mutate: updateRole,
+    isPending: isUpdating,
+    isSuccess: isUpdateSuccess,
+  } = useUpdateRole({
+    setError: form.setError,
+  });
+
+  const {
+    mutate: deleteUserMutation,
+    isPending: isDeleting,
+    isSuccess: isDeleteSuccess,
+  } = useDeleteUser();
+
+  // Close dialogs when mutations succeed
+  useEffect(() => {
+    if (isUpdateSuccess) {
+      onCloseEdit();
+      form.reset();
+    }
+  }, [isUpdateSuccess]);
+
+  useEffect(() => {
+    if (isDeleteSuccess) {
+      onCloseDelete();
+    }
+  }, [isDeleteSuccess]);
 
   // Sync form when editUser changes
   useEffect(() => {
     if (editUser) {
       form.reset({ role: editUser.role });
     }
-  }, [editUser, form]);
-
-  const { mutate: updateRole, isPending: isUpdating } = useUpdateRole({
-    setError: form.setError,
-    onSuccessCallback: () => {
-      onCloseEdit();
-      form.reset();
-      toast.success("Role updated successfully");
-    },
-  });
-
-  const { mutate: deleteUserMutation, isPending: isDeleting } = useDeleteUser({
-    onSuccessCallback: () => {
-      onCloseDelete();
-      toast.success("User deleted successfully");
-    },
-    onErrorCallback: (message: string) => {
-      toast.error(message);
-    },
-  });
+  }, [editUser]);
 
   const handleDelete = () => {
     if (!deleteUser) return;
     deleteUserMutation(deleteUser.id);
   };
 
-  const handleSave = (data: { role: "ADMIN" | "MANAGER" | "DEVELOPER" }) => {
+  const handleSave = (data: UpdateRoleInput) => {
     if (!editUser) return;
-    updateRole({
-      id: editUser.id,
-      input: { role: data.role },
-    });
+    updateRole({ id: editUser.id, input: data });
   };
 
   return (
