@@ -6,6 +6,7 @@ import {
   AllocationInput,
   ConditionReport,
 } from "../schemas/asset-schemas";
+import { ConditionReportCreateInput } from "../schemas/condition-report-schemas";
 import { AssetFilters } from "../schemas/asset-filter-schema";
 
 // ── Asset detail (with embedded allocations / condition-reports) ────
@@ -119,6 +120,16 @@ export async function fetchAssetAllocations(
   return apiFetch<Allocation[]>(`/assets/${assetId}/allocations`, { token });
 }
 
+// ── GET /assets/{assetId}/condition-reports ───────────────────────
+export async function fetchAssetConditionReports(
+  token: string,
+  assetId: string,
+): Promise<ConditionReport[]> {
+  return apiFetch<ConditionReport[]>(`/assets/${assetId}/condition-reports`, {
+    token,
+  });
+}
+
 // ── POST /assets/{id}/allocations ──────────────────────────────────
 export async function assignAsset(
   token: string,
@@ -140,6 +151,19 @@ export async function returnAsset(
   return apiFetch<void>(`/assets/${assetId}/allocations`, {
     method: "DELETE",
     token,
+  });
+}
+
+// ── POST /assets/{id}/condition-reports ───────────────────────────
+export async function createConditionReport(
+  token: string,
+  assetId: string,
+  input: ConditionReportCreateInput,
+): Promise<ConditionReport> {
+  return apiFetch<ConditionReport>(`/assets/${assetId}/condition-reports`, {
+    method: "POST",
+    token,
+    body: JSON.stringify(input),
   });
 }
 
