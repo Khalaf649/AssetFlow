@@ -1,14 +1,21 @@
-'use client';
+"use client";
 
-import { Loader2 } from 'lucide-react';
+import { Loader2 } from "lucide-react";
 import {
-  Table, TableBody, TableCell,
-  TableHead, TableHeader, TableRow,
-} from '@/src/components/ui/table';
-import { Card } from '@/src/components/ui/card';
-import { useConditionReports, useReportFilters } from '../hooks/useConditionReports';
-import { SeverityBadge, ReportStatusBadge } from './Badges';
-import { ConditionReportResponse } from '../schemas/condition-report-schemas';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/src/components/ui/table";
+import { Card } from "@/src/components/ui/card";
+import {
+  useConditionReports,
+  useReportFilters,
+} from "../hooks/useConditionReports";
+import { SeverityBadge, ReportStatusBadge } from "./Badges";
+import { ConditionReportResponse } from "../schemas/condition-report-schemas";
 
 interface DeveloperReportsListProps {
   userId: string;
@@ -39,7 +46,9 @@ export function DeveloperReportsList({ userId }: DeveloperReportsListProps) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400">
         <p className="text-sm">No condition reports submitted yet.</p>
-        <p className="text-sm mt-1">Go to your assets to report any hardware issues.</p>
+        <p className="text-sm mt-1">
+          Go to your assets to report any hardware issues.
+        </p>
       </div>
     );
   }
@@ -49,11 +58,21 @@ export function DeveloperReportsList({ userId }: DeveloperReportsListProps) {
       <Table>
         <TableHeader>
           <TableRow className="bg-white border-b border-gray-200 hover:bg-white">
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">Asset</TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">Issue</TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">Severity</TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">Status</TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">Date</TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">
+              Asset
+            </TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">
+              Issue
+            </TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">
+              Severity
+            </TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">
+              Status
+            </TableHead>
+            <TableHead className="text-gray-600 font-semibold text-sm py-3">
+              Date
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

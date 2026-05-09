@@ -1,22 +1,34 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/src/components/ui/button';
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/src/components/ui/button";
 import {
-  Form, FormControl, FormDescription,
-  FormField, FormItem, FormLabel, FormMessage,
-} from '@/src/components/ui/form';
-import { Textarea } from '@/src/components/ui/textarea';
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/src/components/ui/form";
+import { Textarea } from "@/src/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from '@/src/components/ui/select';
-import { submitReportSchema, SubmitReportInput, Severity } from '../schemas/condition-report-schemas';
-import { useSubmitReport } from '../hooks/useConditionReports';
-import { SeverityBadge } from './Badges';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select";
+import {
+  submitReportSchema,
+  SubmitReportInput,
+  Severity,
+} from "../schemas/condition-report-schemas";
+import { useSubmitReport } from "../hooks/useConditionReports";
+import { SeverityBadge } from "./Badges";
 
 interface ReportIssueFormProps {
   assetId: string;
@@ -24,22 +36,33 @@ interface ReportIssueFormProps {
   onSuccess?: () => void;
 }
 
-const SEVERITIES: Severity[] = ['LOW', 'MEDIUM', 'HIGH'];
+const SEVERITIES: Severity[] = ["LOW", "MEDIUM", "HIGH"];
 
-export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFormProps) {
-  const { mutate: submitReport, isPending, error: submitError } = useSubmitReport(assetId);
+export function ReportIssueForm({
+  assetId,
+  assetName,
+  onSuccess,
+}: ReportIssueFormProps) {
+  const {
+    mutate: submitReport,
+    isPending,
+    error: submitError,
+  } = useSubmitReport(assetId);
 
   const form = useForm<SubmitReportInput>({
     resolver: zodResolver(submitReportSchema),
     defaultValues: {
-      issue: '',
-      severity: 'MEDIUM',
+      issue: "",
+      severity: "MEDIUM",
     },
   });
 
   useEffect(() => {
     if (submitError && (submitError as any).details) {
-      const details = (submitError as any).details as Array<{ field: string; message: string }>;
+      const details = (submitError as any).details as Array<{
+        field: string;
+        message: string;
+      }>;
       details.forEach(({ field, message }) => {
         form.setError(field as any, { message });
       });
@@ -47,8 +70,8 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
   }, [submitError, form]);
 
   useEffect(() => {
-    if (submitError && (submitError as any).code === 'VALIDATION_ERROR') {
-      form.setError('root', { message: submitError.message });
+    if (submitError && (submitError as any).code === "VALIDATION_ERROR") {
+      form.setError("root", { message: submitError.message });
     }
   }, [submitError, form]);
 
@@ -72,7 +95,6 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-
           {/* Root Error */}
           {form.formState.errors.root && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
@@ -87,7 +109,9 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-medium text-gray-700">
-                  <>Issue Description <span className="text-red-500">*</span></>
+                  <>
+                    Issue Description <span className="text-red-500">*</span>
+                  </>
                 </FormLabel>
                 <FormControl>
                   <Textarea
@@ -112,7 +136,9 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-medium text-gray-700">
-                  <>Severity Level <span className="text-red-500">*</span></>
+                  <>
+                    Severity Level <span className="text-red-500">*</span>
+                  </>
                 </FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
@@ -145,10 +171,14 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
               disabled={isPending}
               className="bg-gray-900 hover:bg-gray-700 text-white text-sm"
             >
-              {isPending
-                ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Submitting...</>
-                : 'Submit Report'
-              }
+              {isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Submitting...
+                </>
+              ) : (
+                "Submit Report"
+              )}
             </Button>
             <Button
               type="button"
@@ -160,7 +190,6 @@ export function ReportIssueForm({ assetId, assetName, onSuccess }: ReportIssueFo
               Clear
             </Button>
           </div>
-
         </form>
       </Form>
     </div>
