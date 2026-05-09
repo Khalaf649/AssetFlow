@@ -54,6 +54,14 @@ function handleQueryError(error: Error) {
   }
 }
 
+function shouldSkipUnauthorizedRedirect() {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return window.location.pathname.startsWith("/auth/");
+}
+
 export function TanStackQueryProvider({ children }: { children: ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -66,7 +74,11 @@ export function TanStackQueryProvider({ children }: { children: ReactNode }) {
             // Global mutation handler: only handle 401 (redirect to login).
             // Domain-specific errors are handled by individual mutation
             // onError callbacks.
-            if (error instanceof ApiError && error.code === "UNAUTHORIZED") {
+            if (
+              error instanceof ApiError &&
+              error.code === "UNAUTHORIZED" &&
+              !shouldSkipUnauthorizedRedirect()
+            ) {
               localStorage.removeItem("accessToken");
               localStorage.removeItem("user");
               window.location.href = "/auth/login";
