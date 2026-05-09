@@ -13,7 +13,7 @@ export interface DashboardStats {
 export interface UsageReport {
   totalAllocations: number;
   averageAllocationDays: number;
-  topUsers: { userId: string; name: string; allocations: number }[];
+  topUsers: { userId: string; name: string; allocationsCount: number }[];
   conditionReportsByMonth: { month: string; count: number }[];
 }
 

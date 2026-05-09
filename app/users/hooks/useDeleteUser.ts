@@ -4,7 +4,7 @@ import { useAuth } from "@/app/auth/context/AuthContext";
 import { toast } from "sonner";
 import { queryKeys } from "@/src/lib/query-keys";
 
-export function useDeleteUser() {
+export function useDeleteUser({ onSuccess }: { onSuccess?: () => void }) {
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -16,6 +16,7 @@ export function useDeleteUser() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
       toast.success("User deleted successfully");
+      onSuccess?.();
     },
     onError: (error: unknown) => {
       if (error instanceof ApiError) {

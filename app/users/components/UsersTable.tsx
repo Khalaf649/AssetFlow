@@ -14,6 +14,7 @@ import { Badge } from "@/src/components/ui/badge";
 import { getRoleBadgeStyles } from "./badges-utils";
 import UserProfile from "../interfaces/UserProfile";
 import Link from "next/link";
+import { Loader2 } from "lucide-react";
 
 interface UsersTableProps {
   users: UserProfile[];
@@ -30,6 +31,13 @@ export function UsersTable({
   onEditClick,
   onDeleteClick,
 }: UsersTableProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      </div>
+    );
+  }
   return (
     <div className="bg-card border border-border rounded-lg overflow-hidden">
       <Table>

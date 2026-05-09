@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -15,11 +15,11 @@ import { AssetFormModal } from "../components/AssetFormModal";
 import { AllocationModal } from "../components/AllocationModal";
 
 interface AssetPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function AssetPage({ params }: AssetPageProps) {
-  const assetId = params.id;
+  const { id: assetId } = use(params);
   const router = useRouter();
   const { user } = useAuth();
   const { data: asset, isLoading } = useAsset(assetId);
@@ -45,7 +45,10 @@ export default function AssetPage({ params }: AssetPageProps) {
     return (
       <div className="text-center py-16">
         <p className="text-muted-foreground">Asset not found.</p>
-        <Link href="/assets" className="text-accent hover:underline text-sm mt-2 inline-block">
+        <Link
+          href="/assets"
+          className="text-accent hover:underline text-sm mt-2 inline-block"
+        >
           Back to inventory
         </Link>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/context/AuthContext";
@@ -13,11 +13,11 @@ import { UserActionModals } from "../components/UserActionModals";
 import UserProfile from "../interfaces/UserProfile";
 
 interface UserPageProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default function UserPage({ params }: UserPageProps) {
-  const userId = params.id;
+  const { id: userId } = use(params);
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const { data: user, isLoading } = useUser(userId);
@@ -41,7 +41,10 @@ export default function UserPage({ params }: UserPageProps) {
     return (
       <div className="text-center py-16">
         <p className="text-muted-foreground">User not found.</p>
-        <Link href="/users" className="text-accent hover:underline text-sm mt-2 inline-block">
+        <Link
+          href="/users"
+          className="text-accent hover:underline text-sm mt-2 inline-block"
+        >
           Back to directory
         </Link>
       </div>
@@ -70,10 +73,7 @@ export default function UserPage({ params }: UserPageProps) {
       {/* Assets + Activity side by side */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
         <UserAssignedAssets assets={user.assignedAssets} />
-        <UserActivityTimeline
-          createdAt={user.createdAt}
-          role={user.role}
-        />
+        <UserActivityTimeline createdAt={user.createdAt} role={user.role} />
       </div>
 
       {/* Action Modals */}

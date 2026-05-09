@@ -15,6 +15,8 @@ interface RegisterResponse {
   id: string;
   name: string;
   email: string;
+  role: "ADMIN" | "MANAGER" | "DEVELOPER";
+  createdAt: string;
 }
 
 export async function loginUser(

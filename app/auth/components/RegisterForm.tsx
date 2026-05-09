@@ -42,6 +42,11 @@ export function RegisterForm() {
           Start managing your team&apos;s equipment.
         </p>
       </div>
+      {errors.root && (
+        <div className="mb-4 rounded-md bg-destructive/10 border border-destructive/30 px-3 py-2 text-sm text-destructive">
+          {errors.root.message}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-1.5">
