@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { allocationSchema, AllocationInput, Asset } from "../schemas/asset-schemas";
+import {
+  allocationSchema,
+  AllocationInput,
+  Asset,
+} from "../schemas/asset-schemas";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +21,14 @@ import { Input } from "@/src/components/ui/input";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/src/components/ui/form";
 import { useAssignAsset, useReturnAsset } from "../hooks/useAllocations";
-import { fetchUsers } from "@/app/users/api/users-api";
-import { useAuth } from "@/app/auth/context/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useUserSearch } from "../hooks/useUserSearch";
 
 interface AllocationModalProps {
   open: boolean;
@@ -39,116 +42,84 @@ export function AllocationModal({
   asset,
 }: AllocationModalProps) {
   const isAssigned = asset?.status === "ASSIGNED";
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<AllocationInput>({
     resolver: zodResolver(allocationSchema),
     defaultValues: { userId: "" },
   });
 
-  // Search state for selecting user to assign
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const { token } = useAuth();
+  const {
+    search,
+    isOpen,
+    isFetching,
+    selectedUser,
+    users,
+    handleSelect,
+    handleSearchChange,
+    reset: resetSearch,
+  } = useUserSearch();
 
-  useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
-    return () => clearTimeout(t);
-  }, [search]);
-
-  const usersQuery = useQuery({
-    queryKey: ["users", "search", debouncedSearch],
-    queryFn: async () => {
-      if (!token) throw new Error("No authentication token");
-      return fetchUsers(token, { page: 1, size: 6, q: debouncedSearch });
-    },
-    enabled: !!token && debouncedSearch.length > 0,
-  });
-
+  // Reset everything when the modal opens/closes
   useEffect(() => {
     if (open) {
       form.reset({ userId: "" });
+      resetSearch();
     }
-  }, [open, form]);
+  }, [open, form, resetSearch]);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
+        // Close dropdown but keep selected value
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleClose = () => {
     form.reset();
+    resetSearch();
     onClose();
   };
 
   const { mutate: assignAsset, isPending: isAssigning } = useAssignAsset({
-    assetId: asset?.id || "",
+    assetId: asset?.id ?? "",
     setError: form.setError,
     onSuccess: handleClose,
   });
 
   const { mutate: returnAsset, isPending: isReturning } = useReturnAsset({
-    assetId: asset?.id || "",
+    assetId: asset?.id ?? "",
     setError: form.setError,
     onSuccess: handleClose,
   });
 
   const isPending = isAssigning || isReturning;
 
-  const handleAssign = (data: AllocationInput) => {
-    assignAsset(data);
-  };
-
-  const handleReturn = () => {
-    returnAsset();
-  };
-
   if (!asset) return null;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="sm:max-w-md">
-        {/* Search users UX at the top */}
-        {!isAssigned && (
-          <div className="mb-4">
-            <label className="text-sm font-medium">Search user</label>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name, email, or id"
-              className="w-full mt-1 p-2 border rounded"
-            />
-
-            {usersQuery.isFetching && (
-              <p className="text-sm text-muted-foreground mt-2">Searching...</p>
-            )}
-
-            {usersQuery.data?.items?.length ? (
-              <ul className="mt-2 max-h-40 overflow-auto border rounded bg-white">
-                {usersQuery.data.items.map((u) => (
-                  <li
-                    key={u.id}
-                    className="p-2 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => {
-                      form.setValue("userId", u.id);
-                      setSearch(`${u.name} (${u.email || u.id})`);
-                    }}
-                  >
-                    <div className="text-sm font-medium">{u.name}</div>
-                    <div className="text-xs text-muted-foreground">{u.email || u.id}</div>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-          </div>
-        )}
         <DialogHeader>
           <DialogTitle>
             {isAssigned ? "Return Asset" : "Assign Asset"}
           </DialogTitle>
           <DialogDescription>
             {isAssigned
-              ? `Return ${asset.brand} ${asset.model} from ${asset.assignedTo?.name || "the current user"}`
+              ? `Return ${asset.brand} ${asset.model} from ${asset.assignedTo?.name ?? "the current user"}`
               : `Assign ${asset.brand} ${asset.model} to a user`}
           </DialogDescription>
         </DialogHeader>
 
         {isAssigned ? (
-          /* Return Flow */
+          /* ── Return Flow ── */
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               This will unassign the asset and mark it as available.
@@ -162,35 +133,103 @@ export function AllocationModal({
 
             <DialogFooter>
               <Button
-                type="button"
                 variant="outline"
                 onClick={handleClose}
                 disabled={isPending}
               >
                 Cancel
               </Button>
-              <Button onClick={handleReturn} disabled={isPending}>
+              <Button onClick={() => returnAsset()} disabled={isPending}>
                 {isReturning ? "Returning..." : "Return Asset"}
               </Button>
             </DialogFooter>
           </div>
         ) : (
-          /* Assign Flow */
+          /* ── Assign Flow ── */
           <Form {...form}>
             <form
-              onSubmit={form.handleSubmit(handleAssign)}
+              onSubmit={form.handleSubmit((d) => assignAsset(d))}
               className="space-y-4"
             >
+              {/* User search with dropdown */}
               <FormField
                 control={form.control}
                 name="userId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>User ID</FormLabel>
+                    <FormLabel>Assign To</FormLabel>
+
+                    {/* Search input */}
                     <FormControl>
-                      <Input placeholder="Enter user ID" {...field} />
+                      <div className="relative" ref={dropdownRef}>
+                        <Input
+                          value={search}
+                          onChange={(e) => handleSearchChange(e.target.value)}
+                          placeholder="Search by name or email…"
+                          autoComplete="off"
+                          className={selectedUser ? "pr-8 text-foreground" : ""}
+                        />
+
+                        {/* Clear button when a user is selected */}
+                        {selectedUser && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleSearchChange("");
+                              field.onChange("");
+                            }}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-lg leading-none"
+                            aria-label="Clear selection"
+                          >
+                            ×
+                          </button>
+                        )}
+
+                        {/* Dropdown list */}
+                        {isOpen && (
+                          <div className="absolute z-50 mt-1 w-full rounded-md border bg-popover shadow-md">
+                            {isFetching ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                Searching…
+                              </div>
+                            ) : users.length === 0 ? (
+                              <div className="px-3 py-2 text-sm text-muted-foreground">
+                                No users found.
+                              </div>
+                            ) : (
+                              <ul className="max-h-48 overflow-auto py-1">
+                                {users.map((u) => (
+                                  <li
+                                    key={u.id}
+                                    onMouseDown={(e) => {
+                                      // onMouseDown fires before onBlur so the value is committed
+                                      e.preventDefault();
+                                      handleSelect(u, field.onChange);
+                                    }}
+                                    className="flex flex-col gap-0.5 px-3 py-2 cursor-pointer hover:bg-accent hover:text-accent-foreground transition-colors"
+                                  >
+                                    <span className="text-sm font-medium">
+                                      {u.name}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                      {u.email ?? u.id}
+                                    </span>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </FormControl>
+
+                    <FormDescription>
+                      Type a name or email to search, then click to select.
+                    </FormDescription>
                     <FormMessage />
+
+                    {/* Hidden input keeps the userId in the form */}
+                    <input type="hidden" {...field} />
                   </FormItem>
                 )}
               />
@@ -203,14 +242,14 @@ export function AllocationModal({
 
               <DialogFooter>
                 <Button
-                  type="button"
                   variant="outline"
+                  type="button"
                   onClick={handleClose}
                   disabled={isPending}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" disabled={isPending}>
+                <Button type="submit" disabled={isPending || !selectedUser}>
                   {isAssigning ? "Assigning..." : "Assign Asset"}
                 </Button>
               </DialogFooter>
