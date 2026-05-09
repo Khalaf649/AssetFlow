@@ -10,6 +10,7 @@ import UserProfile from "../../interfaces/UserProfile";
 interface UserProfileHeaderProps {
   user: UserProfile;
   isAdmin: boolean;
+  currentUserId: string; // <-- Added to identify the logged-in user
   onEditClick: (user: UserProfile) => void;
   onDeleteClick: (user: UserProfile) => void;
 }
@@ -17,10 +18,12 @@ interface UserProfileHeaderProps {
 export function UserProfileHeader({
   user,
   isAdmin,
+  currentUserId,
   onEditClick,
   onDeleteClick,
 }: UserProfileHeaderProps) {
   console.log("Rendering UserProfileHeader for user:", user);
+
   const initials = user.name
     .split(" ")
     .map((p) => p[0])
@@ -29,6 +32,11 @@ export function UserProfileHeader({
     .toUpperCase();
 
   const joinedDate = new Date(user.createdAt).toLocaleDateString("en-CA"); // YYYY-MM-DD
+
+  // Check if the user is an admin AND they are not viewing their own profile
+  // Note: Adjust `user.id` to `user._id` if you are using MongoDB
+  const isViewingSelf = currentUserId === user.id;
+  const showAdminActions = isAdmin && !isViewingSelf;
 
   return (
     <Card className="bg-card border-border p-6 mb-6">
@@ -54,7 +62,7 @@ export function UserProfileHeader({
         </div>
 
         {/* Admin Actions */}
-        {isAdmin && (
+        {showAdminActions && (
           <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"

@@ -66,6 +66,7 @@ export default function UserPage({ params }: UserPageProps) {
 
       {/* Profile Header */}
       <UserProfileHeader
+        currentUserId={currentUser.id}
         user={user}
         isAdmin={isAdmin}
         onEditClick={setEditUser}
