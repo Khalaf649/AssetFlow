@@ -129,9 +129,11 @@ export async function fetchAssetConditionReports(
 ): Promise<ConditionReport[]> {
   const params = new URLSearchParams();
   params.append("assetId", assetId);
-  return apiFetch<ConditionReport[]>(`/condition-reports?${params.toString()}`, {
-    token,
-  });
+  const response = await apiFetch<PaginatedResponse<ConditionReport>>(
+    `/condition-reports?${params.toString()}`,
+    { token },
+  );
+  return response.items;
 }
 // ── POST /assets/{id}/allocations ──────────────────────────────────
 export async function assignAsset(

@@ -28,7 +28,7 @@ export const queryKeys = {
   conditionReports: {
     all: ["condition-reports"] as const,
     detail: (id: string) => ["condition-report", id] as const,
-    asset: (assetId: string) => ["asset-condition-reports", assetId] as const,
+    asset: (assetId: string) => ["condition-reports", "by-asset", assetId] as const,
   },
 
   // ── Dashboard ─────────────────────────────────────────────────
