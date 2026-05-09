@@ -8,13 +8,13 @@ import { queryKeys } from "@/src/lib/query-keys";
 
 /**
  * Fetch full condition report history for a single asset.
- * Query key: ["asset-condition-reports", assetId]
+ * Query key: ["conditionReports", "byAsset", assetId]
  */
 export function useConditionReports(assetId: string) {
   const { token } = useAuth();
 
   return useQuery<ConditionReport[]>({
-    queryKey: queryKeys.conditionReports.asset(assetId),
+    queryKey: ["conditionReports", "byAsset", assetId],
     queryFn: async () => {
       if (!token) throw new Error("No authentication token");
       return fetchAssetConditionReports(token, assetId);

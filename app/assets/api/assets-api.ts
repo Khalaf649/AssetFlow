@@ -121,15 +121,18 @@ export async function fetchAssetAllocations(
 }
 
 // ── GET /assets/{assetId}/condition-reports ───────────────────────
+
+// ── GET /condition-reports with asset filter ––––––––––––
 export async function fetchAssetConditionReports(
   token: string,
   assetId: string,
 ): Promise<ConditionReport[]> {
-  return apiFetch<ConditionReport[]>(`/assets/${assetId}/condition-reports`, {
+  const params = new URLSearchParams();
+  params.append("assetId", assetId);
+  return apiFetch<ConditionReport[]>(`/condition-reports?${params.toString()}`, {
     token,
   });
 }
-
 // ── POST /assets/{id}/allocations ──────────────────────────────────
 export async function assignAsset(
   token: string,
