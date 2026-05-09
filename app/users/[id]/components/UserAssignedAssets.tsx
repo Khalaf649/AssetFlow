@@ -21,15 +21,15 @@ export function UserAssignedAssets({ assets = [] }: UserAssignedAssetsProps) {
               <div className="p-4 bg-secondary/40 border border-border rounded-lg hover:bg-secondary/80 hover:border-primary/30 transition-colors cursor-pointer">
                 <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-medium text-sm text-foreground">
+                    <div className="font-medium text-sm text-foreground">
                       {asset.brand}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
+                    </div>
+                    <div className="text-sm text-muted-foreground">
                       {asset.model}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
                       Serial: {asset.serialNumber}
-                    </p>
+                    </div>
                   </div>
                   <div className="text-right space-y-1">
                     <Badge variant="outline" className="text-xs">

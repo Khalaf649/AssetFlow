@@ -35,10 +35,10 @@ export function useLoginMutation({ setError }: UseLoginOptions) {
             });
           });
         } else {
-          setError("root.serverError", { message: error.message });
+          setError("root", { message: error.message });
         }
       } else {
-        setError("root.serverError", {
+        setError("root", {
           message: "An unexpected error occurred",
         });
       }

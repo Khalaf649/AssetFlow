@@ -9,8 +9,10 @@ import type { Asset } from "../schemas/asset-schemas";
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">{label}</p>
-      <p className="text-sm text-foreground mt-1">{value}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium">
+        {label}
+      </p>
+      <div className="text-sm text-foreground mt-1">{value}</div>
     </div>
   );
 }
@@ -27,22 +29,39 @@ export function AssetInfoGrid({ asset }: AssetInfoGridProps) {
       <InfoRow label="Model" value={asset.model} />
       <InfoRow
         label="Serial"
-        value={<span className="font-mono"><Hash className="h-3 w-3 inline" />{asset.serialNumber}</span>}
+        value={
+          <span className="font-mono">
+            <Hash className="h-3 w-3 inline" />
+            {asset.serialNumber}
+          </span>
+        }
       />
       <InfoRow
         label="Purchase Date"
-        value={<><Calendar className="h-3 w-3 inline mr-1" />{asset.purchaseDate}</>}
+        value={
+          <>
+            <Calendar className="h-3 w-3 inline mr-1" />
+            {asset.purchaseDate}
+          </>
+        }
       />
       <InfoRow label="Warranty Expiry" value={asset.warrantyExpirationDate} />
       <InfoRow
         label="Status"
-        value={<Badge className={getStatusBadgeStyles(asset.status)}>{formatStatus(asset.status)}</Badge>}
+        value={
+          <Badge className={getStatusBadgeStyles(asset.status)}>
+            {formatStatus(asset.status)}
+          </Badge>
+        }
       />
       <InfoRow
         label="Assigned To"
         value={
           asset.assignedTo ? (
-            <Link href={`/users/${asset.assignedTo.id}`} className="text-accent hover:underline">
+            <Link
+              href={`/users/${asset.assignedTo.id}`}
+              className="text-accent hover:underline"
+            >
               {asset.assignedTo.name}
             </Link>
           ) : (

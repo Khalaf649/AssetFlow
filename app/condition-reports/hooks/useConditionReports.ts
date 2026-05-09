@@ -4,6 +4,8 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useAuth } from "@/app/auth/context/AuthContext";
+import { ApiError } from "@/src/lib/api-client";
+import { toast } from "sonner";
 import {
   fetchConditionReport,
   fetchConditionReports,
@@ -133,6 +135,23 @@ export function useSubmitReport(assetId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["condition-reports"] });
       queryClient.invalidateQueries({ queryKey: ["asset", assetId] });
+      toast.success("Condition report submitted successfully");
+    },
+    onError: (error: unknown) => {
+      if (error instanceof ApiError) {
+        if (error.code === "VALIDATION_ERROR" && error.details?.length) {
+          const messages = error.details.map((d) => `${d.field}: ${d.message}`).join("; ");
+          toast.error("Validation Error", { description: messages });
+        } else if (error.code === "FORBIDDEN") {
+          toast.error("Access Denied", { description: "You are not authorized to submit condition reports." });
+        } else if (error.code === "NETWORK_ERROR") {
+          toast.error("Connection Error", { description: error.message });
+        } else {
+          toast.error("Failed to submit report", { description: error.message });
+        }
+      } else {
+        toast.error("Unexpected Error", { description: "Something went wrong. Please try again." });
+      }
     },
   });
 }
@@ -151,6 +170,23 @@ export function useResolveReport(reportId: string) {
       queryClient.invalidateQueries({
         queryKey: ["condition-report", reportId],
       });
+      toast.success("Condition report updated successfully");
+    },
+    onError: (error: unknown) => {
+      if (error instanceof ApiError) {
+        if (error.code === "VALIDATION_ERROR" && error.details?.length) {
+          const messages = error.details.map((d) => `${d.field}: ${d.message}`).join("; ");
+          toast.error("Validation Error", { description: messages });
+        } else if (error.code === "FORBIDDEN") {
+          toast.error("Access Denied", { description: "You are not authorized to update condition reports." });
+        } else if (error.code === "NETWORK_ERROR") {
+          toast.error("Connection Error", { description: error.message });
+        } else {
+          toast.error("Failed to update report", { description: error.message });
+        }
+      } else {
+        toast.error("Unexpected Error", { description: "Something went wrong. Please try again." });
+      }
     },
   });
 }

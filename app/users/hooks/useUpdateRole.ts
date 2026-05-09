@@ -8,9 +8,10 @@ import { queryKeys } from "@/src/lib/query-keys";
 
 interface UseUpdateRoleOptions {
   setError: UseFormSetError<UpdateRoleInput>;
+  onSuccess?: () => void;
 }
 
-export function useUpdateRole({ setError }: UseUpdateRoleOptions) {
+export function useUpdateRole({ setError, onSuccess }: UseUpdateRoleOptions) {
   const { token } = useAuth();
   const queryClient = useQueryClient();
 
@@ -27,8 +28,11 @@ export function useUpdateRole({ setError }: UseUpdateRoleOptions) {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
-      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.users.detail(variables.id),
+      });
       toast.success("Role updated successfully");
+      onSuccess?.();
     },
     onError: (error: unknown) => {
       if (error instanceof ApiError) {

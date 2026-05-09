@@ -15,7 +15,5 @@ export default function LoginPage() {
     }
   }, [user, router]);
 
-  if (user) return null;
-
   return <LoginForm />;
 }

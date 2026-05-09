@@ -2,7 +2,7 @@
 // Single source of truth for API_BASE_URL, ApiError, ApiResponse,
 // PaginatedResponse, and the apiFetch wrapper.
 
-export const API_BASE_URL = "http://localhost:8080/api/v1";
+export const API_BASE_URL = " http://167.172.102.40/api/v1";
 
 // ── Response Envelope ──────────────────────────────────────────────
 export interface ApiResponse<T> {
@@ -12,7 +12,7 @@ export interface ApiResponse<T> {
   data?: T;
   error?: {
     code: string;
-    details?: Array<{ field: string; message: string }>;
+    details?: Array<{ field: string; issue: string }>;
   };
 }
 
@@ -31,6 +31,7 @@ export class ApiError extends Error {
   constructor(
     public override message: string,
     public code: string,
+    public status: number,
     public details?: Array<{ field: string; message: string }>,
   ) {
     super(message);
@@ -55,23 +56,48 @@ export async function apiFetch<T>(
     (headers as Record<string, string>).Authorization = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...fetchOptions,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...fetchOptions,
+      headers,
+    });
+  } catch {
+    throw new ApiError(
+      "Network error. Please check your connection and try again.",
+      "NETWORK_ERROR",
+      0,
+    );
+  }
 
   // DELETE with 204 No Content
   if (response.status === 204) {
     return undefined as T;
   }
 
-  const data: ApiResponse<T> = await response.json();
+  let data: ApiResponse<T>;
+  try {
+    data = await response.json();
+  } catch {
+    throw new ApiError(
+      "Unexpected server response. Please try again later.",
+      "PARSE_ERROR",
+      response.status,
+    );
+  }
 
   if (!data.success) {
+    // Map server's { field, issue } → client's { field, message }
+    const mappedDetails = data.error?.details?.map((d) => ({
+      field: d.field,
+      message: d.issue,
+    }));
+
     throw new ApiError(
       data.message,
       data.error?.code || "UNKNOWN_ERROR",
-      data.error?.details,
+      data.status || response.status,
+      mappedDetails,
     );
   }
 

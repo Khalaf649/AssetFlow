@@ -20,6 +20,7 @@ export function UserProfileHeader({
   onEditClick,
   onDeleteClick,
 }: UserProfileHeaderProps) {
+  console.log("Rendering UserProfileHeader for user:", user);
   const initials = user.name
     .split(" ")
     .map((p) => p[0])

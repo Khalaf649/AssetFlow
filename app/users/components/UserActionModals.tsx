@@ -61,37 +61,27 @@ export function UserActionModals({
     resolver: zodResolver(updateRoleSchema),
   });
 
+  // Sync form whenever a new user is opened for editing
   useEffect(() => {
     if (editUser) {
       form.reset({ role: editUser.role });
     }
   }, [editUser, form]);
 
-  const {
-    mutate: updateRole,
-    isPending: isUpdating,
-    isSuccess: isUpdateSuccess,
-  } = useUpdateRole({ setError: form.setError });
-
-  const {
-    mutate: deleteUserMutation,
-    isPending: isDeleting,
-    isSuccess: isDeleteSuccess,
-  } = useDeleteUser();
-
-  useEffect(() => {
-    if (isUpdateSuccess) {
-      onCloseEdit();
+  const { mutate: updateRole, isPending: isUpdating } = useUpdateRole({
+    setError: form.setError,
+    onSuccess: () => {
       form.reset();
-    }
-  }, [isUpdateSuccess, onCloseEdit, form]);
+      onCloseEdit();
+    },
+  });
 
-  useEffect(() => {
-    if (isDeleteSuccess) {
+  const { mutate: deleteUserMutation, isPending: isDeleting } = useDeleteUser({
+    onSuccess: () => {
       onCloseDelete();
       onDeleteSuccess();
-    }
-  }, [isDeleteSuccess, onCloseDelete, onDeleteSuccess]);
+    },
+  });
 
   const handleUpdateRole = (input: UpdateRoleInput) => {
     if (!editUser) return;

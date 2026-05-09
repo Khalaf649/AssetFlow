@@ -23,7 +23,7 @@ export function LoginForm() {
   });
   const loginMutation = useLoginMutation({ setError });
 
-  async function onSubmit(data: LoginInput) {
+  function onSubmit(data: LoginInput) {
     loginMutation.mutate(data);
   }
 
