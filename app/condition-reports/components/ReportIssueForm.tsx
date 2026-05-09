@@ -58,20 +58,20 @@ export function ReportIssueForm({
   });
 
   useEffect(() => {
-    if (submitError && (submitError as any).details) {
-      const details = (submitError as any).details as Array<{
-        field: string;
-        message: string;
-      }>;
-      details.forEach(({ field, message }) => {
-        form.setError(field as any, { message });
-      });
-    }
-  }, [submitError, form]);
+    if (!submitError) return;
 
-  useEffect(() => {
-    if (submitError && (submitError as any).code === "VALIDATION_ERROR") {
-      form.setError("root", { message: submitError.message });
+    const details = (submitError as any).details as
+      | Array<{ field: string; issue: string }>
+      | undefined;
+
+    if (details && details.length > 0) {
+      // Field-level validation errors — show inline under each input.
+      details.forEach(({ field, issue }) => {
+        form.setError(field as keyof SubmitReportInput, { message: issue });
+      });
+    } else {
+      // Generic / unexpected error — show at the top of the form.
+      form.setError("root", { message: (submitError as Error).message });
     }
   }, [submitError, form]);
 

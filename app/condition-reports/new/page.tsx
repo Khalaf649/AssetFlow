@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,13 +20,21 @@ export default function NewConditionReportPage() {
   const router = useRouter();
   const [selectedAssetId, setSelectedAssetId] = useState<string>("");
 
-  if (!user) return null;
-
-  const { data: assetsResponse, isLoading, error } = useAssets({
+  // FIX Bug 1: user?.id instead of user.id — the hook must be called
+  // unconditionally (Rules of Hooks), but user can be null before auth
+  // resolves, so we use optional chaining here and guard the render below.
+  const {
+    data: assetsResponse,
+    isLoading,
+    error,
+  } = useAssets({
     page: 1,
     size: 100,
-    assignedUserId: user.id,
+    assignedUserId: user?.id,
   });
+
+  // Guard AFTER the hook calls so hooks are always called in the same order.
+  if (!user) return null;
 
   const assets = assetsResponse?.items || [];
 
@@ -41,7 +49,9 @@ export default function NewConditionReportPage() {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-red-500">Error loading assets: {(error as Error).message}</p>
+        <p className="text-red-500">
+          Error loading assets: {(error as Error).message}
+        </p>
       </div>
     );
   }
@@ -51,7 +61,9 @@ export default function NewConditionReportPage() {
       <div className="p-6">
         <Card className="p-6">
           <h1 className="text-2xl font-semibold mb-4">Report a New Issue</h1>
-          <p>You have no assigned assets to report issues on.</p>
+          <p className="text-muted-foreground">
+            You have no assigned assets to report issues on.
+          </p>
         </Card>
       </div>
     );

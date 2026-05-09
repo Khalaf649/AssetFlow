@@ -1,29 +1,42 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2 } from 'lucide-react';
-import { Button } from '@/src/components/ui/button';
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/src/components/ui/button";
 import {
-  Dialog, DialogContent, DialogDescription,
-  DialogHeader, DialogTitle,
-} from '@/src/components/ui/dialog';
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/src/components/ui/dialog";
 import {
-  Form, FormControl, FormDescription,
-  FormField, FormItem, FormLabel, FormMessage,
-} from '@/src/components/ui/form';
-import { Textarea } from '@/src/components/ui/textarea';
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/src/components/ui/form";
+import { Textarea } from "@/src/components/ui/textarea";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from '@/src/components/ui/select';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/src/components/ui/select";
 import {
-  resolveReportSchema, ResolveReportInput,
-  ReportStatus, ConditionReportResponse,
-} from '../schemas/condition-report-schemas';
-import { useResolveConditionReport } from '../hooks/useConditionReportMutations';
-import { ReportStatusBadge, SeverityBadge } from './Badges';
+  resolveReportSchema,
+  ResolveReportInput,
+  ReportStatus,
+  ConditionReportResponse,
+} from "../schemas/condition-report-schemas";
+import { useResolveConditionReport } from "../hooks/useConditionReportMutations";
+import { ReportStatusBadge, SeverityBadge } from "./Badges";
 
 interface ResolveReportModalProps {
   isOpen: boolean;
@@ -32,37 +45,57 @@ interface ResolveReportModalProps {
 }
 
 const allowedTransitions: Record<ReportStatus, ReportStatus[]> = {
-  OPEN: ['OPEN', 'IN_PROGRESS', 'RESOLVED'],
-  IN_PROGRESS: ['IN_PROGRESS', 'RESOLVED'],
-  RESOLVED: ['RESOLVED'],
+  OPEN: ["OPEN", "IN_PROGRESS", "RESOLVED"],
+  IN_PROGRESS: ["IN_PROGRESS", "RESOLVED"],
+  RESOLVED: ["RESOLVED"],
 };
 
-export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportModalProps) {
-  const { mutate: resolve, isPending, error: resolveError } = useResolveConditionReport(report.id);
-  const [selectedStatus, setSelectedStatus] = useState<ReportStatus>(report.status);
+export function ResolveReportModal({
+  isOpen,
+  onClose,
+  report,
+}: ResolveReportModalProps) {
+  const {
+    mutate: resolve,
+    isPending,
+    error: resolveError,
+  } = useResolveConditionReport(report.id);
+  const [selectedStatus, setSelectedStatus] = useState<ReportStatus>(
+    report.status,
+  );
 
   const form = useForm<ResolveReportInput>({
     resolver: zodResolver(resolveReportSchema),
     defaultValues: {
       status: report.status,
-      resolution: report.resolution || '',
+      resolution: report.resolution || "",
     },
   });
 
   useEffect(() => {
     form.reset({
       status: report.status,
-      resolution: report.resolution || '',
+      resolution: report.resolution || "",
     });
     setSelectedStatus(report.status);
   }, [report, form]);
 
+  // FIX Bug 3 (same as ReportIssueForm):
+  // API details use { field, issue } — not { field, message }.
+  // Also merged into one effect to avoid double root + field errors.
   useEffect(() => {
-    if (resolveError && (resolveError as any).details) {
-      const details = (resolveError as any).details as Array<{ field: string; message: string }>;
-      details.forEach(({ field, message }) => {
-        form.setError(field as any, { message });
+    if (!resolveError) return;
+
+    const details = (resolveError as any).details as
+      | Array<{ field: string; issue: string }>
+      | undefined;
+
+    if (details && details.length > 0) {
+      details.forEach(({ field, issue }) => {
+        form.setError(field as keyof ResolveReportInput, { message: issue });
       });
+    } else {
+      form.setError("root", { message: (resolveError as Error).message });
     }
   }, [resolveError, form]);
 
@@ -85,13 +118,13 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
             Resolve Report
           </DialogTitle>
           <DialogDescription className="text-sm text-gray-500">
-            Update the status and add resolution details for this condition report
+            Update the status and add resolution details for this condition
+            report
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-
             {/* Root Error */}
             {form.formState.errors.root && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
@@ -109,7 +142,9 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Reporter</span>
-                <span className="font-medium text-gray-900">{report.reportedBy.name}</span>
+                <span className="font-medium text-gray-900">
+                  {report.reportedBy.name}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Severity</span>
@@ -128,7 +163,9 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-sm font-medium text-gray-700">
-                    <>Status <span className="text-red-500">*</span></>
+                    <>
+                      Status <span className="text-red-500">*</span>
+                    </>
                   </FormLabel>
                   <Select
                     value={field.value}
@@ -153,7 +190,8 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
                     </SelectContent>
                   </Select>
                   <FormDescription className="text-xs text-gray-400">
-                    Status can only progress forward: OPEN → IN PROGRESS → RESOLVED
+                    Status can only progress forward: OPEN → IN PROGRESS →
+                    RESOLVED
                   </FormDescription>
                   <FormMessage className="text-xs" />
                 </FormItem>
@@ -161,14 +199,16 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
             />
 
             {/* Resolution Field */}
-            {selectedStatus === 'RESOLVED' && (
+            {selectedStatus === "RESOLVED" && (
               <FormField
                 control={form.control}
                 name="resolution"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm font-medium text-gray-700">
-                      <>Resolution <span className="text-red-500">*</span></>
+                      <>
+                        Resolution <span className="text-red-500">*</span>
+                      </>
                     </FormLabel>
                     <FormControl>
                       <Textarea
@@ -203,13 +243,16 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
                 disabled={isPending}
                 className="bg-gray-900 hover:bg-gray-700 text-white text-sm"
               >
-                {isPending
-                  ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Updating...</>
-                  : 'Update Report'
-                }
+                {isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Report"
+                )}
               </Button>
             </div>
-
           </form>
         </Form>
       </DialogContent>
