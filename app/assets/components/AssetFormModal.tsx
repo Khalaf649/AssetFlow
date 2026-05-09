@@ -22,6 +22,7 @@ import { Input } from "@/src/components/ui/input";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -42,6 +43,15 @@ interface AssetFormModalProps {
   editAsset?: Asset | null;
 }
 
+const DEFAULT_VALUES: AssetFormInput = {
+  brand: "",
+  model: "",
+  serialNumber: "",
+  type: "LAPTOP",
+  purchaseDate: "",
+  warrantyExpirationDate: "",
+};
+
 export function AssetFormModal({
   open,
   onClose,
@@ -51,36 +61,22 @@ export function AssetFormModal({
 
   const form = useForm<AssetFormInput>({
     resolver: zodResolver(assetFormSchema),
-    defaultValues: {
-      brand: "",
-      model: "",
-      serialNumber: "",
-      type: "LAPTOP",
-      purchaseDate: "",
-      warrantyExpirationDate: "",
-    },
+    defaultValues: DEFAULT_VALUES,
   });
 
   useEffect(() => {
-    if (editAsset) {
-      form.reset({
-        brand: editAsset.brand,
-        model: editAsset.model,
-        serialNumber: editAsset.serialNumber,
-        type: editAsset.type,
-        purchaseDate: editAsset.purchaseDate,
-        warrantyExpirationDate: editAsset.warrantyExpirationDate,
-      });
-    } else {
-      form.reset({
-        brand: "",
-        model: "",
-        serialNumber: "",
-        type: "LAPTOP",
-        purchaseDate: "",
-        warrantyExpirationDate: "",
-      });
-    }
+    form.reset(
+      editAsset
+        ? {
+            brand: editAsset.brand,
+            model: editAsset.model,
+            serialNumber: editAsset.serialNumber,
+            type: editAsset.type,
+            purchaseDate: editAsset.purchaseDate,
+            warrantyExpirationDate: editAsset.warrantyExpirationDate,
+          }
+        : DEFAULT_VALUES,
+    );
   }, [editAsset, form]);
 
   const handleClose = () => {
@@ -121,10 +117,8 @@ export function AssetFormModal({
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Brand & Model */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -135,10 +129,14 @@ export function AssetFormModal({
                     <FormControl>
                       <Input placeholder="e.g. Dell" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      The manufacturer of the asset.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="model"
@@ -148,12 +146,16 @@ export function AssetFormModal({
                     <FormControl>
                       <Input placeholder="e.g. XPS 15" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      The specific model name or number.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
+            {/* Serial Number & Type */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -168,10 +170,14 @@ export function AssetFormModal({
                         {...field}
                       />
                     </FormControl>
+                    <FormDescription>
+                      Found on the device label or box.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="type"
@@ -196,12 +202,16 @@ export function AssetFormModal({
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormDescription>
+                      The category this asset belongs to.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
+            {/* Purchase Date & Warranty Expiration */}
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -212,10 +222,14 @@ export function AssetFormModal({
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      The date the asset was bought.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name="warrantyExpirationDate"
@@ -225,12 +239,16 @@ export function AssetFormModal({
                     <FormControl>
                       <Input type="date" {...field} />
                     </FormControl>
+                    <FormDescription>
+                      When the warranty coverage ends.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
               />
             </div>
 
+            {/* Root-level error */}
             {form.formState.errors.root && (
               <p className="text-sm text-destructive">
                 {form.formState.errors.root.message}
