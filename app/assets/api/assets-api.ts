@@ -35,6 +35,7 @@ export async function fetchAssets(
   token: string,
   filters: AssetFilters,
 ): Promise<PaginatedResponse<Asset>> {
+  console.log("fetchAssets called with filters:", filters);
   return apiFetch<PaginatedResponse<Asset>>(
     `/assets?${buildAssetParams(filters)}`,
     { token },

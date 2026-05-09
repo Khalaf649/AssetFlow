@@ -3,19 +3,15 @@
 import Link from "next/link";
 import { Laptop } from "lucide-react";
 import { Badge } from "@/src/components/ui/badge";
-import { Button } from "@/src/components/ui/button";
-import { useAuth } from "@/app/auth/context/AuthContext";
 import { useAssets } from "../hooks/useAssets";
 import { useSpareLaptops } from "../hooks/useSpareLaptops";
 import { AssetTable } from "./AssetTable";
 import { getStatusBadgeStyles, formatStatus } from "./badges-utils";
 
 export function DeveloperAssetView() {
-  const { user } = useAuth();
   const { data, isLoading } = useAssets({
     page: 1,
     size: 100,
-    assignedUserId: user?.id,
   });
   const { data: spareLaptops } = useSpareLaptops();
 
@@ -45,8 +41,12 @@ export function DeveloperAssetView() {
                 className="bg-card border border-border rounded-lg p-4 hover:border-accent/40 transition-colors"
               >
                 <Laptop className="h-6 w-6 text-accent mb-2" />
-                <p className="font-medium">{a.brand} {a.model}</p>
-                <p className="text-xs text-muted-foreground font-mono mt-1">{a.serialNumber}</p>
+                <p className="font-medium">
+                  {a.brand} {a.model}
+                </p>
+                <p className="text-xs text-muted-foreground font-mono mt-1">
+                  {a.serialNumber}
+                </p>
                 <Badge className={`mt-2 ${getStatusBadgeStyles(a.status)}`}>
                   {formatStatus(a.status)}
                 </Badge>
