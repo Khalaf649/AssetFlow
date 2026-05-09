@@ -27,7 +27,7 @@ import {
   SubmitReportInput,
   Severity,
 } from "../schemas/condition-report-schemas";
-import { useSubmitReport } from "../hooks/useConditionReports";
+import { useSubmitConditionReport } from "../hooks/useConditionReportMutations";
 import { SeverityBadge } from "./Badges";
 
 interface ReportIssueFormProps {
@@ -47,7 +47,7 @@ export function ReportIssueForm({
     mutate: submitReport,
     isPending,
     error: submitError,
-  } = useSubmitReport(assetId);
+  } = useSubmitConditionReport(assetId);
 
   const form = useForm<SubmitReportInput>({
     resolver: zodResolver(submitReportSchema),

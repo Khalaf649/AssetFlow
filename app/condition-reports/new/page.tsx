@@ -1,10 +1,9 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/app/auth/context/AuthContext";
-import { fetchAssets } from "@/app/assets/api/assets-api";
+import { useAssets } from "@/app/assets/hooks/useAssets";
 import { ReportIssueForm } from "../components/ReportIssueForm";
 import {
   Select,
@@ -21,14 +20,12 @@ export default function NewConditionReportPage() {
   const router = useRouter();
   const [selectedAssetId, setSelectedAssetId] = useState<string>("");
 
-  const {
-    data: assetsResponse,
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["assets", { assignedUserId: user?.id }],
-    queryFn: () => fetchAssets({ assignedUserId: user?.id }),
-    enabled: !!user?.id,
+  if (!user) return null;
+
+  const { data: assetsResponse, isLoading, error } = useAssets({
+    page: 1,
+    size: 100,
+    assignedUserId: user.id,
   });
 
   const assets = assetsResponse?.items || [];
@@ -44,7 +41,7 @@ export default function NewConditionReportPage() {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-red-500">Error loading assets: {error.message}</p>
+        <p className="text-red-500">Error loading assets: {(error as Error).message}</p>
       </div>
     );
   }
@@ -60,7 +57,7 @@ export default function NewConditionReportPage() {
     );
   }
 
-  const selectedAsset = assets.find((a) => a.id === selectedAssetId);
+  const selectedAsset = assets.find((asset) => asset.id === selectedAssetId);
 
   return (
     <div className="p-6">

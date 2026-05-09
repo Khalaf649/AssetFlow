@@ -3,6 +3,7 @@
 
 import type { UserFilters } from "@/app/users/schemas/filter-schema";
 import type { AssetFilters } from "@/app/assets/schemas/asset-filter-schema";
+import type { FilterReportInput } from "@/app/condition-reports/schemas/condition-report-schemas";
 
 export const queryKeys = {
   // ── Users ─────────────────────────────────────────────────────
@@ -27,6 +28,7 @@ export const queryKeys = {
   // ── Condition Reports ─────────────────────────────────────────
   conditionReports: {
     all: ["condition-reports"] as const,
+    list: (filters: FilterReportInput) => ["condition-reports", filters] as const,
     detail: (id: string) => ["condition-report", id] as const,
     asset: (assetId: string) => ["condition-reports", "by-asset", assetId] as const,
   },

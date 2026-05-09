@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Loader2 } from "lucide-react";
 import {
@@ -9,27 +9,27 @@ import {
   TableHeader,
   TableRow,
 } from "@/src/components/ui/table";
-import { Card } from "@/src/components/ui/card";
-import {
-  useConditionReports,
-  useReportFilters,
-} from "../hooks/useConditionReports";
+import { Button } from "@/src/components/ui/button";
 import { SeverityBadge, ReportStatusBadge } from "./Badges";
 import { ConditionReportResponse } from "../schemas/condition-report-schemas";
 
 interface DeveloperReportsListProps {
-  userId: string;
+  reports: ConditionReportResponse[];
+  isLoading: boolean;
+  error?: Error | null;
+  onResolveClick?: (report: ConditionReportResponse) => void;
 }
 
-export function DeveloperReportsList({ userId }: DeveloperReportsListProps) {
-  const { filters } = useReportFilters();
-  const developerFilters = userId ? { ...filters, userId } : filters;
-  const { data, isLoading, error } = useConditionReports(developerFilters);
-
+export function DeveloperReportsList({
+  reports,
+  isLoading,
+  error,
+  onResolveClick,
+}: DeveloperReportsListProps) {
   if (error) {
     return (
       <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded text-sm">
-        Failed to load your reports. Please try again.
+        Failed to load condition reports. Please try again.
       </div>
     );
   }
@@ -42,60 +42,52 @@ export function DeveloperReportsList({ userId }: DeveloperReportsListProps) {
     );
   }
 
-  if (!data || data.items.length === 0) {
+  if (reports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-        <p className="text-sm">No condition reports submitted yet.</p>
-        <p className="text-sm mt-1">
-          Go to your assets to report any hardware issues.
-        </p>
+        <p className="text-sm">No condition reports found.</p>
       </div>
     );
   }
 
   return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden bg-white">
+    <div className="bg-card border border-border rounded-lg overflow-hidden">
       <Table>
-        <TableHeader>
-          <TableRow className="bg-white border-b border-gray-200 hover:bg-white">
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">
-              Asset
-            </TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">
-              Issue
-            </TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">
-              Severity
-            </TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">
-              Status
-            </TableHead>
-            <TableHead className="text-gray-600 font-semibold text-sm py-3">
-              Date
-            </TableHead>
+        <TableHeader className="bg-secondary/50">
+          <TableRow className="hover:bg-secondary/40 border-border">
+            <TableHead>Asset</TableHead>
+            <TableHead>Reported By</TableHead>
+            <TableHead>Issue</TableHead>
+            <TableHead>Severity</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Date</TableHead>
+            {onResolveClick && <TableHead className="text-right">Actions</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.items.map((report: ConditionReportResponse) => (
-            <TableRow
-              key={report.id}
-              className="border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors"
-            >
-              <TableCell className="font-semibold text-gray-900 py-4">
-                {report.assetName ?? report.assetId}
-              </TableCell>
-              <TableCell className="text-gray-700 py-4 max-w-xs truncate">
-                {report.issue}
-              </TableCell>
-              <TableCell className="py-4">
+          {reports.map((report) => (
+            <TableRow key={report.id} className="hover:bg-secondary/40 border-border">
+              <TableCell className="font-medium">{report.assetId}</TableCell>
+              <TableCell className="text-muted-foreground">{report.reportedBy.name}</TableCell>
+              <TableCell className="text-muted-foreground max-w-xs truncate">{report.issue}</TableCell>
+              <TableCell>
                 <SeverityBadge severity={report.severity} />
               </TableCell>
-              <TableCell className="py-4">
+              <TableCell>
                 <ReportStatusBadge status={report.status} />
               </TableCell>
-              <TableCell className="text-gray-500 text-sm py-4">
+              <TableCell className="text-muted-foreground text-sm">
                 {new Date(report.createdAt).toISOString().slice(0, 10)}
               </TableCell>
+              {onResolveClick && (
+                <TableCell className="text-right">
+                  {report.status !== 'RESOLVED' ? (
+                    <Button variant="outline" size="sm" onClick={() => onResolveClick(report)}>
+                      Resolve
+                    </Button>
+                  ) : null}
+                </TableCell>
+              )}
             </TableRow>
           ))}
         </TableBody>

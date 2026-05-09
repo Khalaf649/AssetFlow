@@ -22,7 +22,7 @@ import {
   resolveReportSchema, ResolveReportInput,
   ReportStatus, ConditionReportResponse,
 } from '../schemas/condition-report-schemas';
-import { useResolveReport } from '../hooks/useConditionReports';
+import { useResolveConditionReport } from '../hooks/useConditionReportMutations';
 import { ReportStatusBadge, SeverityBadge } from './Badges';
 
 interface ResolveReportModalProps {
@@ -38,7 +38,7 @@ const allowedTransitions: Record<ReportStatus, ReportStatus[]> = {
 };
 
 export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportModalProps) {
-  const { mutate: resolve, isPending, error: resolveError } = useResolveReport(report.id);
+  const { mutate: resolve, isPending, error: resolveError } = useResolveConditionReport(report.id);
   const [selectedStatus, setSelectedStatus] = useState<ReportStatus>(report.status);
 
   const form = useForm<ResolveReportInput>({
@@ -104,12 +104,12 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Asset</span>
                 <span className="font-medium text-gray-900">
-                  {report.assetName ?? report.assetId}
+                  {report.assetId}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Reporter</span>
-                <span className="font-medium text-gray-900">{report.reportedByName}</span>
+                <span className="font-medium text-gray-900">{report.reportedBy.name}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-500">Severity</span>
