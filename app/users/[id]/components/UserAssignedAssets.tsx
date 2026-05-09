@@ -5,16 +5,33 @@ import type { Asset } from "../../schemas/users-schemas";
 
 interface UserAssignedAssetsProps {
   assets?: Asset[];
+  isLoading?: boolean;
 }
 
-export function UserAssignedAssets({ assets = [] }: UserAssignedAssetsProps) {
+export function UserAssignedAssets({
+  assets = [],
+  isLoading = false,
+}: UserAssignedAssetsProps) {
   return (
     <Card className="bg-card border-border p-6 h-full">
       <h2 className="text-base font-semibold mb-4">
         Assigned Assets ({assets.length})
       </h2>
 
-      {assets.length > 0 ? (
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="p-4 bg-secondary/40 border border-border rounded-lg animate-pulse"
+            >
+              <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+              <div className="h-4 bg-muted rounded w-1/2 mb-2" />
+              <div className="h-3 bg-muted rounded w-1/4" />
+            </div>
+          ))}
+        </div>
+      ) : assets.length > 0 ? (
         <div className="space-y-3">
           {assets.map((asset) => (
             <Link key={asset.id} href={`/assets/${asset.id}`} className="block">

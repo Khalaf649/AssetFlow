@@ -10,6 +10,7 @@ export const queryKeys = {
     all: ["users"] as const,
     list: (filters: UserFilters) => ["users", filters] as const,
     detail: (id: string) => ["user", id] as const,
+    assets: (userId: string) => ["user-assets", userId] as const,
   },
 
   // ── Assets ────────────────────────────────────────────────────
@@ -20,8 +21,7 @@ export const queryKeys = {
     search: (filters: AssetFilters & { warrantyExpired?: boolean }) =>
       ["asset-search", filters] as const,
     spareLaptops: ["spare-laptops"] as const,
-    allocations: (assetId: string) =>
-      ["asset-allocations", assetId] as const,
+    allocations: (assetId: string) => ["asset-allocations", assetId] as const,
   },
 
   // ── Dashboard ─────────────────────────────────────────────────

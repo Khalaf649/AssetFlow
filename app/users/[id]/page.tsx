@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/auth/context/AuthContext";
 import { useUser } from "../hooks/useUser";
+import { useUserAssets } from "../hooks/useUserAssets";
 import { ArrowLeft } from "lucide-react";
 import { UserProfileHeader } from "./components/UserProfileHeader";
 import { UserAssignedAssets } from "./components/UserAssignedAssets";
@@ -21,6 +22,7 @@ export default function UserPage({ params }: UserPageProps) {
   const router = useRouter();
   const { user: currentUser } = useAuth();
   const { data: user, isLoading } = useUser(userId);
+  const { data: assets = [], isLoading: assetsLoading } = useUserAssets(userId);
   const [editUser, setEditUser] = useState<UserProfile | null>(null);
   const [deleteUser, setDeleteUser] = useState<UserProfile | null>(null);
 
@@ -72,7 +74,7 @@ export default function UserPage({ params }: UserPageProps) {
 
       {/* Assets + Activity side by side */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-6">
-        <UserAssignedAssets assets={user.assignedAssets} />
+        <UserAssignedAssets assets={assets} isLoading={assetsLoading} />
         <UserActivityTimeline createdAt={user.createdAt} role={user.role} />
       </div>
 
