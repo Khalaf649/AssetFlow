@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { allocationSchema, AllocationInput, Asset } from "../schemas/asset-schemas";
@@ -23,6 +23,9 @@ import {
   FormMessage,
 } from "@/src/components/ui/form";
 import { useAssignAsset, useReturnAsset } from "../hooks/useAllocations";
+import { fetchUsers } from "@/app/users/api/users-api";
+import { useAuth } from "@/app/auth/context/AuthContext";
+import { useQuery } from "@tanstack/react-query";
 
 interface AllocationModalProps {
   open: boolean;
@@ -40,6 +43,25 @@ export function AllocationModal({
   const form = useForm<AllocationInput>({
     resolver: zodResolver(allocationSchema),
     defaultValues: { userId: "" },
+  });
+
+  // Search state for selecting user to assign
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const { token } = useAuth();
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const usersQuery = useQuery({
+    queryKey: ["users", "search", debouncedSearch],
+    queryFn: async () => {
+      if (!token) throw new Error("No authentication token");
+      return fetchUsers(token, { page: 1, size: 6, q: debouncedSearch });
+    },
+    enabled: !!token && debouncedSearch.length > 0,
   });
 
   useEffect(() => {
@@ -80,6 +102,40 @@ export function AllocationModal({
   return (
     <Dialog open={open} onOpenChange={(o) => !o && handleClose()}>
       <DialogContent className="sm:max-w-md">
+        {/* Search users UX at the top */}
+        {!isAssigned && (
+          <div className="mb-4">
+            <label className="text-sm font-medium">Search user</label>
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, email, or id"
+              className="w-full mt-1 p-2 border rounded"
+            />
+
+            {usersQuery.isFetching && (
+              <p className="text-sm text-muted-foreground mt-2">Searching...</p>
+            )}
+
+            {usersQuery.data?.items?.length ? (
+              <ul className="mt-2 max-h-40 overflow-auto border rounded bg-white">
+                {usersQuery.data.items.map((u) => (
+                  <li
+                    key={u.id}
+                    className="p-2 hover:bg-gray-50 cursor-pointer"
+                    onClick={() => {
+                      form.setValue("userId", u.id);
+                      setSearch(`${u.name} (${u.email || u.id})`);
+                    }}
+                  >
+                    <div className="text-sm font-medium">{u.name}</div>
+                    <div className="text-xs text-muted-foreground">{u.email || u.id}</div>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle>
             {isAssigned ? "Return Asset" : "Assign Asset"}
