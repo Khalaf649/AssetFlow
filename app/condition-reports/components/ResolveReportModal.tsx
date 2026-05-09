@@ -32,9 +32,9 @@ interface ResolveReportModalProps {
 }
 
 const allowedTransitions: Record<ReportStatus, ReportStatus[]> = {
-  OPEN:        ['OPEN', 'IN_PROGRESS', 'RESOLVED'],
+  OPEN: ['OPEN', 'IN_PROGRESS', 'RESOLVED'],
   IN_PROGRESS: ['IN_PROGRESS', 'RESOLVED'],
-  RESOLVED:    ['RESOLVED'],
+  RESOLVED: ['RESOLVED'],
 };
 
 export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportModalProps) {
@@ -44,14 +44,14 @@ export function ResolveReportModal({ isOpen, onClose, report }: ResolveReportMod
   const form = useForm<ResolveReportInput>({
     resolver: zodResolver(resolveReportSchema),
     defaultValues: {
-      status:     report.status,
+      status: report.status,
       resolution: report.resolution || '',
     },
   });
 
   useEffect(() => {
     form.reset({
-      status:     report.status,
+      status: report.status,
       resolution: report.resolution || '',
     });
     setSelectedStatus(report.status);

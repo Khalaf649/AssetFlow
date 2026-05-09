@@ -65,9 +65,9 @@ export interface ConditionReportResponse {
 export interface PaginatedReportsResponse {
   items: ConditionReportResponse[];
   pagination: {
-    page:          number;
-    size:          number;
+    page: number;
+    size: number;
     totalElements: number;
-    totalPages:    number;
+    totalPages: number;
   };
 }
