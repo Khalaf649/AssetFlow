@@ -1,36 +1,115 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+![AssetFlow Logo](logo/logo.jpeg)
 
-## Getting Started
+# AssetFlow — Frontend
 
-First, run the development server:
+AssetFlow is the frontend application for the AssetTrack platform — an asset lifecycle management system designed for hardware inventory, allocations, condition reporting, and admin reporting. This repository contains a Next.js (App Router) application built with Tailwind CSS, TanStack Query, React Hook Form, Zod, and a small design system.
+
+**Status:** Active development
+
+## Key Features
+
+- Authentication (register / login) with JWT-backed `AuthContext`
+- Role-based views: `DEVELOPER`, `MANAGER`, `ADMIN`
+- Asset inventory (create / update / decommission)
+- Asset allocation lifecycle (assign / return)
+- Condition reports (developers submit, admins manage)
+- Reports & analytics dashboard for admins/managers
+- In-app notifications and user preferences
+
+## Tech Stack
+
+- Framework: Next.js (App Router)
+- Styling: Tailwind CSS
+- Forms: React Hook Form + Zod
+- Server-state: TanStack Query v5
+- Icons: Lucide React
+- Language: TypeScript
+
+## Repo Layout (high level)
+
+- `app/` — main Next.js app routes and pages
+- `app/assets` — asset list, details, modals, hooks, schemas
+- `app/auth` — login/register, auth API and context
+- `app/condition-reports` — condition reports feature
+- `app/dashboard` — protected dashboard, notification bell
+- `app/reports` — admin analytics and reports
+- `app/users` — user management and RBAC
+- `lib/` & `src/` — shared clients, utils, UI primitives
+- `logo/` — brand assets (logo.jpeg)
+
+See the `CLAUDE.md` and `AGENTS.md` files for feature specs and agent notes.
+
+## Local Development
+
+Prerequisites:
+
+- Node.js 18+ (recommended) or matching runtime for Next 16
+- A package manager: `npm`, `pnpm`, or `yarn`
+
+Install dependencies:
+
+```bash
+npm install
+# or
+pnpm install
+# or
+yarn
+```
+
+Run development server (hot reload):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Build for production:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+Lint:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment & API
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The frontend expects a backend API following the project's API envelope pattern. Default base URL used in the project code is `http://localhost:8080/api/v1`. Authentication uses Bearer JWTs sent in the `Authorization` header.
 
-## Deploy on Vercel
+Common env variables (check `src/lib/api-client.ts` for exact names):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `NEXT_PUBLIC_API_BASE_URL` — base URL for API requests (default `http://localhost:8080/api/v1`)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+- Follow existing code conventions (TypeScript, Tailwind utilities)
+- Use React Hook Form + Zod for new forms and validation
+- Server errors and validation must be mapped into forms using `setError` (see CLAUDE.md)
+- Respect URL-as-State pattern (filters/pagination in search params)
+
+When opening PRs, include a concise description, screenshots for UI changes, and link any backend contract changes.
+
+## Developer Notes
+
+- Authentication: `app/auth/context/AuthContext.tsx` manages login/logout and localStorage persistence.
+- Queries & mutations: `src/lib/query-keys.ts` and the hooks under `app/**/hooks` use TanStack Query v5 patterns.
+- Zero-local-state pattern: filters live in URL search params, not in component state.
+
+## Files to Inspect
+
+- Feature specs: [CLAUDE.md](CLAUDE.md)
+- Agent rules & notes: [AGENTS.md](AGENTS.md)
+
+## License
+
+This repository does not include a license file. Add `LICENSE` if you intend to make it open-source.
+
+## Contact
+
+If you need help, open an issue or reach out to the maintainers listed in the project metadata.
+
