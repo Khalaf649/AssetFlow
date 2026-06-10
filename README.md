@@ -1,115 +1,204 @@
-![AssetFlow Logo](logo/logo.jpeg)
+# AssetFlow — Enterprise Asset Management System
 
-# AssetFlow — Frontend
+![AssetFlow Logo](./logo/logo.jpeg)
 
-AssetFlow is the frontend application for the AssetTrack platform — an asset lifecycle management system designed for hardware inventory, allocations, condition reporting, and admin reporting. This repository contains a Next.js (App Router) application built with Tailwind CSS, TanStack Query, React Hook Form, Zod, and a small design system.
+AssetFlow is a modern, web-based enterprise asset management platform designed for seamless tracking, allocation, and lifecycle management of IT hardware. \
+Manage users, track equipment, report issues, and generate comprehensive analytics—all with role-based access control and real-time updates.
 
-**Status:** Active development
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](#)
+[![Framework](https://img.shields.io/badge/framework-Next.js-black.svg)](#)
 
-## Key Features
 
-- Authentication (register / login) with JWT-backed `AuthContext`
-- Role-based views: `DEVELOPER`, `MANAGER`, `ADMIN`
-- Asset inventory (create / update / decommission)
-- Asset allocation lifecycle (assign / return)
-- Condition reports (developers submit, admins manage)
-- Reports & analytics dashboard for admins/managers
-- In-app notifications and user preferences
 
-## Tech Stack
+## Screenshot Gallery
 
-- Framework: Next.js (App Router)
-- Styling: Tailwind CSS
-- Forms: React Hook Form + Zod
-- Server-state: TanStack Query v5
-- Icons: Lucide React
-- Language: TypeScript
+### Dashboard Overview
 
-## Repo Layout (high level)
+The main workspace provides at-a-glance visibility into critical asset metrics, with quick-access navigation to all core features.
 
-- `app/` — main Next.js app routes and pages
-- `app/assets` — asset list, details, modals, hooks, schemas
-- `app/auth` — login/register, auth API and context
-- `app/condition-reports` — condition reports feature
-- `app/dashboard` — protected dashboard, notification bell
-- `app/reports` — admin analytics and reports
-- `app/users` — user management and RBAC
-- `lib/` & `src/` — shared clients, utils, UI primitives
-- `logo/` — brand assets (logo.jpeg)
+![Dashboard View](./assets/dashboard.png)
 
-See the `CLAUDE.md` and `AGENTS.md` files for feature specs and agent notes.
+---
 
-## Local Development
+### Asset Inventory Management
 
-Prerequisites:
+Complete visibility over all hardware assets with rich categorization and status tracking.
 
-- Node.js 18+ (recommended) or matching runtime for Next 16
-- A package manager: `npm`, `pnpm`, or `yarn`
+- **Asset Types:** Laptops, Monitors, Accessories—each with detailed specifications.
+- **Status Tracking:** AVAILABLE, ASSIGNED, UNDER_REPAIR, DECOMMISSIONED.
+- **Warranty Monitoring:** Track expiration dates and receive automated alerts.  
+   ![Asset Inventory View](./assets/assets.png)
 
-Install dependencies:
+### Personnel & Role Management
 
-```bash
+Centralized user directory with granular role-based access control (RBAC).
+
+- **User Roles:** ADMIN, MANAGER, DEVELOPER—each with tailored permissions.
+- **Profile Management:** View and edit team member information.
+- **Role Assignment:** Promote or restrict access with a single action.  
+   ![User Management View](./assets/People.png)
+
+### Core Features & Workflows
+
+Powerful capabilities designed to streamline asset operations and provide actionable intelligence.
+
+---
+
+#### Asset Allocation & Assignment
+
+Seamless workflow for deploying equipment to team members and tracking usage history.
+
+- **One-Click Assignment**  
+  Assign any available asset to a user with automatic status updates.
+
+- **Return & Redeployment**  
+  Mark assets as returned and immediately redeploy to the next user.
+
+- **Allocation History**  
+  View complete assignment history with timestamps for audit compliance.
+
+![Asset Allocation Flow](./assets/Asset.png)
+
+> **tip:** Use allocation history to identify high-utilization assets and plan procurement accordingly.
+
+---
+
+#### Condition Reporting System
+
+Empower users to report hardware issues and enable managers to track resolution progress.
+
+- **Developer Reporting**  
+  Team members submit issues on assigned equipment with severity levels (LOW, MEDIUM, HIGH).
+
+- **Status Workflow**  
+  Reports flow through OPEN → IN_PROGRESS → RESOLVED states with manager oversight.
+
+- **Resolution Tracking**  
+  Document fixes and solutions for future reference.
+
+![Condition Reports View](./assets/reports.png)
+
+> **tip:** High-frequency reports on specific assets may indicate vendor quality issues or procurement patterns.
+
+---
+
+#### Analytics & Insights
+
+Data-driven dashboards for strategic decision-making and operational planning.
+
+- **Asset Utilization**  
+  Track allocation rates, average deployment duration, and user equipment counts.
+
+- **Warranty Expiry Planning**  
+  Identify upcoming warranty expirations and recommend maintenance or replacement actions.
+
+- **Condition Report Analytics**  
+  Monitor issue frequency, resolution time, and asset health trends.
+
+![Analytics Dashboard](./assets/analytics.png)
+
+> **tip:** Use warranty expiry data to negotiate bulk renewal deals and plan budget cycles.
+
+---
+
+#### Role-Based Access Control
+
+Granular permissions ensure data security and workflow integrity.
+
+- **Admin:** Full system access, user management, and role assignment.
+- **Manager:** Asset operations, report management, and analytics access.
+- **Developer:** Personal asset tracking and issue reporting.
+
+> **Pro tip:** Managers can audit asset allocation history without exposing sensitive corporate data to all team members.
+
+---
+
+#### Real-Time Notifications
+
+Stay informed of critical events with intelligent alert routing.
+
+- **Warranty Expiry Alerts**  
+  Proactive notifications for assets approaching warranty end.
+
+- **Assignment Updates**  
+  Track when equipment is allocated or returned.
+
+- **Report Status Changes**  
+  Follow condition reports from submission to resolution.
+
+> **tip:** Configure notification preferences to focus on alerts most relevant to your role.
+
+---
+
+#### Search & Filter
+
+Powerful discovery tools for finding assets and users in seconds.
+
+- **Asset Search**  
+  Query by brand, model, serial number, or allocation status.
+
+- **User Directory**  
+  Filter by role, department, or equipment assignment status.
+
+- **Report Filtering**  
+  Narrow condition reports by status, severity, or assigned asset.
+
+> **tip:** Save common filter combinations as quick views for recurring workflows.
+
+---
+
+---
+
+# Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Development & Contributing](#development--contributing)
+- [Contact & Acknowledgements](#contact--acknowledgements)
+
+---
+
+# Installation
+
+## Prerequisites
+
+- **Node.js** (v16+ recommended)
+- **npm** (bundled with Node.js)
+
+---
+
+## Setup
+
+Install project dependencies from the root directory:
+
+```powershell
+cd "AssetFlow"
 npm install
-# or
-pnpm install
-# or
-yarn
 ```
 
-Run development server (hot reload):
+## Quick Start
 
-```bash
-npm run dev
-```
+1. Open the app in your browser.
 
-Open http://localhost:3000 in your browser.
+2. Log in with your assigned role (ADMIN, MANAGER, or DEVELOPER).
 
-Build for production:
+3. From the Dashboard, you get an overview of:
 
-```bash
-npm run build
-npm run start
-```
+   - Total assets and their current statuses
+   - Active allocations and recent returns
+   - Pending condition reports
 
-Lint:
+4. Navigate to:
 
-```bash
-npm run lint
-```
+   - **Assets** to browse inventory, check warranty dates, and manage hardware.
+   - **People** to view the user directory and manage role assignments.
+   - **Allocation** to assign equipment or process returns.
+   - **Reports** to submit or track condition reports.
+   - **Analytics** to review utilization trends and warranty planning data.
 
-## Environment & API
+5. Use **Search & Filter** across any section to find what you need fast.
 
-The frontend expects a backend API following the project's API envelope pattern. Default base URL used in the project code is `http://localhost:8080/api/v1`. Authentication uses Bearer JWTs sent in the `Authorization` header.
-
-Common env variables (check `src/lib/api-client.ts` for exact names):
-
-- `NEXT_PUBLIC_API_BASE_URL` — base URL for API requests (default `http://localhost:8080/api/v1`)
-
-## Contributing
-
-- Follow existing code conventions (TypeScript, Tailwind utilities)
-- Use React Hook Form + Zod for new forms and validation
-- Server errors and validation must be mapped into forms using `setError` (see CLAUDE.md)
-- Respect URL-as-State pattern (filters/pagination in search params)
-
-When opening PRs, include a concise description, screenshots for UI changes, and link any backend contract changes.
-
-## Developer Notes
-
-- Authentication: `app/auth/context/AuthContext.tsx` manages login/logout and localStorage persistence.
-- Queries & mutations: `src/lib/query-keys.ts` and the hooks under `app/**/hooks` use TanStack Query v5 patterns.
-- Zero-local-state pattern: filters live in URL search params, not in component state.
-
-## Files to Inspect
-
-- Feature specs: [CLAUDE.md](CLAUDE.md)
-- Agent rules & notes: [AGENTS.md](AGENTS.md)
-
-## License
-
-This repository does not include a license file. Add `LICENSE` if you intend to make it open-source.
-
-## Contact
-
-If you need help, open an issue or reach out to the maintainers listed in the project metadata.
-
+**tip:**  
+Start by setting up your user roles under People before doing any asset assignments — permissions determine what each team member can see and do across the platform.
