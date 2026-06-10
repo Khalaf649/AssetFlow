@@ -17,7 +17,7 @@ Manage users, track equipment, report issues, and generate comprehensive analyti
 
 The main workspace provides at-a-glance visibility into critical asset metrics, with quick-access navigation to all core features.
 
-![Dashboard View](./assets/dashboard.png)
+![Dashboard View](./assets/Dashboard.png)
 
 ---
 
@@ -28,7 +28,7 @@ Complete visibility over all hardware assets with rich categorization and status
 - **Asset Types:** Laptops, Monitors, Accessories—each with detailed specifications.
 - **Status Tracking:** AVAILABLE, ASSIGNED, UNDER_REPAIR, DECOMMISSIONED.
 - **Warranty Monitoring:** Track expiration dates and receive automated alerts.  
-   ![Asset Inventory View](./assets/assets.png)
+   ![Asset Inventory View](./assets/Assets.png)
 
 ### Personnel & Role Management
 
@@ -77,7 +77,7 @@ Empower users to report hardware issues and enable managers to track resolution 
 - **Resolution Tracking**  
   Document fixes and solutions for future reference.
 
-![Condition Reports View](./assets/reports.png)
+![Condition Reports View](./assets/Reports.png)
 
 > **tip:** High-frequency reports on specific assets may indicate vendor quality issues or procurement patterns.
 
@@ -96,7 +96,7 @@ Data-driven dashboards for strategic decision-making and operational planning.
 - **Condition Report Analytics**  
   Monitor issue frequency, resolution time, and asset health trends.
 
-![Analytics Dashboard](./assets/analytics.png)
+![Analytics Dashboard](./assets/Analytics.png)
 
 > **tip:** Use warranty expiry data to negotiate bulk renewal deals and plan budget cycles.
 
